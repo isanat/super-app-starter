@@ -281,7 +281,50 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_public: {
+        Row: {
+          bio: string | null
+          church_id: string | null
+          created_at: string | null
+          id: string | null
+          instruments: string[] | null
+          name: string | null
+          photo_url: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          bio?: string | null
+          church_id?: string | null
+          created_at?: string | null
+          id?: string | null
+          instruments?: string[] | null
+          name?: string | null
+          photo_url?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          bio?: string | null
+          church_id?: string | null
+          created_at?: string | null
+          id?: string | null
+          instruments?: string[] | null
+          name?: string | null
+          photo_url?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       has_role: {
