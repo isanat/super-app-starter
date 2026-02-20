@@ -26,7 +26,7 @@ export default function Church() {
     e.preventDefault();
     if (!church) return;
     setLoading(true);
-    await supabase.from("churches").update(form).eq("id", church.id);
+    await supabase.from("churches").update(form as any).eq("id", church.id);
     setLoading(false);
     toast({ title: "Igreja atualizada!" });
   };
