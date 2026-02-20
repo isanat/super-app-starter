@@ -20,10 +20,10 @@ export default function Musicians() {
         .from("user_roles")
         .select("user_id")
         .eq("church_id", activeRole.church_id)
-        .eq("status", "approved" as any);
+        .eq("status", "approved");
       if (roles && roles.length > 0) {
         const { data: profiles } = await supabase
-          .from("profiles" as any)
+          .from("profiles")
           .select("id, user_id, church_id, name, bio, photo_url, instruments, city, state, whatsapp")
           .in("user_id", roles.map(r => r.user_id));
         setMusicians(profiles || []);

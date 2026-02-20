@@ -20,11 +20,11 @@ export default function Voting() {
       .from("user_roles")
       .select("user_id")
       .eq("church_id", activeRole.church_id)
-      .eq("status", "approved" as any);
+      .eq("status", "approved");
 
     if (roles && roles.length > 0) {
       const { data: profiles } = await supabase
-        .from("profiles_public" as any)
+        .from("profiles_public")
         .select("user_id, name")
         .in("user_id", roles.map(r => r.user_id));
       setCandidates(profiles || []);

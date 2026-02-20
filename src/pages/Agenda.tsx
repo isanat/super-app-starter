@@ -7,8 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, MapPin, CheckCircle2, XCircle, HelpCircle, Music2, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-type ConfirmStatus = "confirmed" | "declined" | "pending";
-
 interface EventEntry {
   id: string;
   title: string;
@@ -108,7 +106,7 @@ export default function Agenda() {
 
     await supabase
       .from("profiles")
-      .update({ cancellation_count: nextCount } as any)
+      .update({ cancellation_count: nextCount })
       .eq("user_id", user.id);
 
     toast({ title: "Participação cancelada", description: "Sua pontuação de cancelamentos foi atualizada." });

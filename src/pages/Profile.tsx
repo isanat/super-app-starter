@@ -41,7 +41,7 @@ export default function Profile() {
     setLoading(true);
     const { error } = await supabase
       .from("profiles")
-      .update({ name, phone, whatsapp, city, state, bio, instruments } as any)
+      .update({ name, phone, whatsapp, city, state, bio, instruments })
       .eq("user_id", user.id);
     setLoading(false);
     if (error) {
