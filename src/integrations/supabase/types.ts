@@ -19,8 +19,10 @@ export type Database = {
           address: string | null
           city: string | null
           created_at: string
+          district: string | null
           id: string
           name: string
+          pastor_name: string | null
           phone: string | null
           state: string | null
           updated_at: string
@@ -29,8 +31,10 @@ export type Database = {
           address?: string | null
           city?: string | null
           created_at?: string
+          district?: string | null
           id?: string
           name: string
+          pastor_name?: string | null
           phone?: string | null
           state?: string | null
           updated_at?: string
@@ -39,8 +43,10 @@ export type Database = {
           address?: string | null
           city?: string | null
           created_at?: string
+          district?: string | null
           id?: string
           name?: string
+          pastor_name?: string | null
           phone?: string | null
           state?: string | null
           updated_at?: string
@@ -197,7 +203,9 @@ export type Database = {
       profiles: {
         Row: {
           bio: string | null
+          cancellation_count: number
           church_id: string | null
+          city: string | null
           created_at: string
           email: string | null
           id: string
@@ -205,12 +213,16 @@ export type Database = {
           name: string
           phone: string | null
           photo_url: string | null
+          state: string | null
           updated_at: string
           user_id: string
+          whatsapp: string | null
         }
         Insert: {
           bio?: string | null
+          cancellation_count?: number
           church_id?: string | null
+          city?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -218,12 +230,16 @@ export type Database = {
           name: string
           phone?: string | null
           photo_url?: string | null
+          state?: string | null
           updated_at?: string
           user_id: string
+          whatsapp?: string | null
         }
         Update: {
           bio?: string | null
+          cancellation_count?: number
           church_id?: string | null
+          city?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -231,8 +247,10 @@ export type Database = {
           name?: string
           phone?: string | null
           photo_url?: string | null
+          state?: string | null
           updated_at?: string
           user_id?: string
+          whatsapp?: string | null
         }
         Relationships: [
           {

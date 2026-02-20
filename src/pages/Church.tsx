@@ -11,14 +11,14 @@ import { useToast } from "@/hooks/use-toast";
 export default function Church() {
   const { activeRole } = useAuth();
   const [church, setChurch] = useState<any>(null);
-  const [form, setForm] = useState({ name: "", address: "", city: "", state: "", phone: "" });
+  const [form, setForm] = useState({ name: "", address: "", city: "", state: "", phone: "", pastor_name: "", district: "" });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     if (!activeRole?.church_id) return;
     supabase.from("churches").select("*").eq("id", activeRole.church_id).single().then(({ data }) => {
-      if (data) { setChurch(data); setForm({ name: data.name || "", address: data.address || "", city: data.city || "", state: data.state || "", phone: data.phone || "" }); }
+      if (data) { setChurch(data); setForm({ name: data.name || "", address: data.address || "", city: data.city || "", state: data.state || "", phone: data.phone || "", pastor_name: data.pastor_name || "", district: data.district || "" }); }
     });
   }, [activeRole]);
 
@@ -26,7 +26,7 @@ export default function Church() {
     e.preventDefault();
     if (!church) return;
     setLoading(true);
-    await supabase.from("churches").update(form).eq("id", church.id);
+    await supabase.from("churches").update(form as any).eq("id", church.id);
     setLoading(false);
     toast({ title: "Igreja atualizada!" });
   };
@@ -61,6 +61,10 @@ export default function Church() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2"><Label>Estado</Label><Input value={form.state} onChange={e => setForm({ ...form, state: e.target.value })} /></div>
               <div className="space-y-2"><Label>Telefone</Label><Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2"><Label>Pastor Responsável</Label><Input value={form.pastor_name} onChange={e => setForm({ ...form, pastor_name: e.target.value })} placeholder="Pr. Nome do Pastor" /></div>
+              <div className="space-y-2"><Label>Distrito</Label><Input value={form.district} onChange={e => setForm({ ...form, district: e.target.value })} placeholder="Ex: Distrito Central" /></div>
             </div>
             <Button type="submit" className="gradient-primary text-white" disabled={loading}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4" /> Salvar</>}
