@@ -4,10 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, MapPin, CheckCircle2, XCircle, HelpCircle, Music2 } from "lucide-react";
+import { Calendar, Clock, MapPin, CheckCircle2, XCircle, HelpCircle, Music2, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-type ConfirmStatus = "confirmed" | "declined" | "pending";
 
 interface EventEntry {
   id: string;
@@ -80,6 +78,40 @@ export default function Agenda() {
     }
   };
 
+
+  const handleCancelParticipation = async (eventId: string) => {
+    if (!user) return;
+
+    const confirmCancel = window.confirm("Tem certeza? Cancelamentos de última hora afetam sua reputação no app.");
+    if (!confirmCancel) return;
+
+    const { error: deleteError } = await supabase
+      .from("event_musicians")
+      .delete()
+      .eq("event_id", eventId)
+      .eq("user_id", user.id);
+
+    if (deleteError) {
+      toast({ title: "Erro ao cancelar", description: deleteError.message, variant: "destructive" });
+      return;
+    }
+
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("cancellation_count")
+      .eq("user_id", user.id)
+      .single();
+
+    const nextCount = (profileData?.cancellation_count || 0) + 1;
+
+    await supabase
+      .from("profiles")
+      .update({ cancellation_count: nextCount })
+      .eq("user_id", user.id);
+
+    toast({ title: "Participação cancelada", description: "Sua pontuação de cancelamentos foi atualizada." });
+    fetchEvents();
+  };
   const getStatusBadge = (confirmed: boolean | null) => {
     if (confirmed === true)
       return <Badge className="gap-1 border" style={{background:"hsl(142 71% 95%)", color:"hsl(142 70% 30%)", borderColor:"hsl(142 71% 80%)"}}><CheckCircle2 className="w-3 h-3" />Confirmado</Badge>;
@@ -137,7 +169,7 @@ export default function Agenda() {
                     </div>
 
                     {/* Confirm / Decline buttons */}
-                    <div className="flex gap-2 mt-3">
+                    <div className="flex gap-2 mt-3 flex-wrap">
                       <Button
                         size="sm"
                         variant={event.confirmed === true ? "default" : "outline"}
@@ -155,6 +187,15 @@ export default function Agenda() {
                       >
                         <XCircle className="w-4 h-4" />
                         {event.confirmed === false ? "Recusado" : "Recusar"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1 text-amber-700 border-amber-300 hover:bg-amber-50"
+                        onClick={() => handleCancelParticipation(event.id)}
+                      >
+                        <AlertTriangle className="w-4 h-4" />
+                        Cancelar participação
                       </Button>
                     </div>
                   </div>

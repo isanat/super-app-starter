@@ -1,7 +1,7 @@
 import { useAuth } from "@/lib/auth";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Vote, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -13,33 +13,90 @@ export default function Voting() {
   const [myVote, setMyVote] = useState<string | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
+  const fetchVotingData = async () => {
     if (!activeRole?.church_id) return;
-    const fetch = async () => {
-      // Get all approved members as candidates
-      const { data: roles } = await supabase.from("user_roles").select("user_id").eq("church_id", activeRole.church_id).eq("status", "approved" as any);
-      if (roles && roles.length > 0) {
-        const { data: profiles } = await supabase.from("profiles_public" as any).select("user_id, name").in("user_id", roles.map(r => r.user_id));
-        setCandidates(profiles || []);
-      }
-      // Get votes
-      const { data: allVotes } = await supabase.from("director_votes").select("*").eq("church_id", activeRole.church_id);
-      setVotes(allVotes || []);
-      const mine = allVotes?.find(v => v.voter_id === user?.id);
-      setMyVote(mine?.candidate_id || null);
-    };
-    fetch();
+
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("user_id")
+      .eq("church_id", activeRole.church_id)
+      .eq("status", "approved");
+
+    if (roles && roles.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles_public")
+        .select("user_id, name")
+        .in("user_id", roles.map(r => r.user_id));
+      setCandidates(profiles || []);
+    } else {
+      setCandidates([]);
+    }
+
+    const { data: allVotes } = await supabase
+      .from("director_votes")
+      .select("*")
+      .eq("church_id", activeRole.church_id);
+    setVotes(allVotes || []);
+    const mine = allVotes?.find(v => v.voter_id === user?.id);
+    setMyVote(mine?.candidate_id || null);
+  };
+
+  useEffect(() => {
+    fetchVotingData();
   }, [activeRole, user]);
 
   const handleVote = async (candidateId: string) => {
     if (!user || !activeRole?.church_id) return;
-    if (myVote) {
-      await supabase.from("director_votes").update({ candidate_id: candidateId }).eq("voter_id", user.id).eq("church_id", activeRole.church_id);
-    } else {
-      await supabase.from("director_votes").insert({ church_id: activeRole.church_id, voter_id: user.id, candidate_id: candidateId });
+    const { error: voteError } = await supabase
+      .from("director_votes")
+      .upsert(
+        { church_id: activeRole.church_id, voter_id: user.id, candidate_id: candidateId },
+        { onConflict: "church_id,voter_id" }
+      );
+
+    if (voteError) {
+      toast({ title: "Erro ao registrar voto", description: voteError.message, variant: "destructive" });
+      return;
     }
+
+    const { data: candidateVotes } = await supabase
+      .from("director_votes")
+      .select("id")
+      .eq("church_id", activeRole.church_id)
+      .eq("candidate_id", candidateId);
+
+    const totalVotes = candidateVotes?.length ?? 0;
+
+    if (totalVotes >= 3) {
+      const { error: demoteError } = await supabase
+        .from("user_roles")
+        .update({ role: "musician" as const })
+        .eq("church_id", activeRole.church_id)
+        .eq("role", "director");
+
+      if (demoteError) {
+        toast({ title: "Erro ao atualizar liderança", description: demoteError.message, variant: "destructive" });
+        return;
+      }
+
+      const { error: promoteError } = await supabase
+        .from("user_roles")
+        .update({ role: "director" as const })
+        .eq("user_id", candidateId)
+        .eq("church_id", activeRole.church_id);
+
+      if (promoteError) {
+        toast({ title: "Erro ao eleger diretor", description: promoteError.message, variant: "destructive" });
+        return;
+      }
+
+      toast({ title: "Novo diretor eleito!", description: "Limite de 3 votos atingido." });
+    } else {
+      toast({ title: "Voto registrado!" });
+    }
+
     setMyVote(candidateId);
-    toast({ title: "Voto registrado!" });
+    await fetchVotingData();
   };
 
   const voteCount = (candidateId: string) => votes.filter(v => v.candidate_id === candidateId).length;
