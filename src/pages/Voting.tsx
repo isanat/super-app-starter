@@ -19,7 +19,7 @@ export default function Voting() {
       // Get all approved members as candidates
       const { data: roles } = await supabase.from("user_roles").select("user_id").eq("church_id", activeRole.church_id).eq("status", "approved" as any);
       if (roles && roles.length > 0) {
-        const { data: profiles } = await supabase.from("profiles").select("user_id, name, email").in("user_id", roles.map(r => r.user_id));
+        const { data: profiles } = await supabase.from("profiles_public" as any).select("user_id, name").in("user_id", roles.map(r => r.user_id));
         setCandidates(profiles || []);
       }
       // Get votes

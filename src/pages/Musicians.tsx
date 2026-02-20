@@ -21,8 +21,8 @@ export default function Musicians() {
         .eq("status", "approved" as any);
       if (roles && roles.length > 0) {
         const { data: profiles } = await supabase
-          .from("profiles")
-          .select("*")
+          .from("profiles_public" as any)
+          .select("id, user_id, church_id, name, bio, photo_url, instruments")
           .in("user_id", roles.map(r => r.user_id));
         setMusicians(profiles || []);
       }
@@ -57,7 +57,7 @@ export default function Musicians() {
                   </div>
                   <div>
                     <p className="font-semibold">{m.name}</p>
-                    <p className="text-sm text-muted-foreground">{m.email}</p>
+                    <p className="text-sm text-muted-foreground">{m.instruments?.join(", ") || "Sem instrumento"}</p>
                   </div>
                 </div>
                 {m.instruments?.length > 0 && (
