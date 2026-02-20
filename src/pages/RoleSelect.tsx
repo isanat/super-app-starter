@@ -52,13 +52,16 @@ export default function RoleSelect() {
 
     if (roleErr) {
       toast({ title: "Erro ao criar perfil", description: roleErr.message, variant: "destructive" });
+      setLoading(false);
     } else {
+      toast({ title: "Igreja criada!", description: "Você é o diretor desta igreja." });
+      // Refresh context and reload to ensure roles are reloaded before routing
       await refreshRoles();
       await refreshProfile();
-      toast({ title: "Igreja criada!", description: "Você é o diretor desta igreja." });
-      navigate("/");
+      // Small delay to ensure state propagates before navigation
+      setTimeout(() => navigate("/"), 200);
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleMusicianSubmit = async (e: React.FormEvent) => {
@@ -89,13 +92,14 @@ export default function RoleSelect() {
 
     if (roleErr) {
       toast({ title: "Erro", description: roleErr.message, variant: "destructive" });
+      setLoading(false);
     } else {
+      toast({ title: "Solicitação enviada!", description: "Aguarde a aprovação do diretor." });
       await refreshRoles();
       await refreshProfile();
-      toast({ title: "Solicitação enviada!", description: "Aguarde a aprovação do diretor." });
-      navigate("/");
+      setTimeout(() => navigate("/"), 200);
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
