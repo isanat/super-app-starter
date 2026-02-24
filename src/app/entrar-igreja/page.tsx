@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useCallback } from "react"
+import { Suspense, useMemo, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useQuery, useMutation } from "@tanstack/react-query"
@@ -11,7 +11,7 @@ import { Church, Users, Loader2, CheckCircle } from "lucide-react"
 import { toast } from "sonner"
 import { useState } from "react"
 
-export default function EntrarIgrejaPage() {
+function EntrarIgrejaContent() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -220,5 +220,24 @@ export default function EntrarIgrejaPage() {
         )}
       </div>
     </div>
+  )
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+      <div className="text-center">
+        <Loader2 className="h-12 w-12 animate-spin text-emerald-600 mx-auto mb-4" />
+        <p className="text-muted-foreground">Carregando...</p>
+      </div>
+    </div>
+  )
+}
+
+export default function EntrarIgrejaPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <EntrarIgrejaContent />
+    </Suspense>
   )
 }
