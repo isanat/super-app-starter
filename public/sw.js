@@ -1,9 +1,9 @@
 // Louvor Conectado - Service Worker
-// Version: 1.0.0
+// Version: 5.0.0 - FIREBASE FCM PUSH NOTIFICATIONS
 
-const CACHE_NAME = 'louvor-conectado-v1';
-const STATIC_CACHE_NAME = 'louvor-static-v1';
-const API_CACHE_NAME = 'louvor-api-v1';
+const CACHE_NAME = 'louvor-conectado-v5';
+const STATIC_CACHE_NAME = 'louvor-static-v5';
+const API_CACHE_NAME = 'louvor-api-v5';
 
 // Arquivos estáticos para cache
 const STATIC_ASSETS = [
