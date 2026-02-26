@@ -31,6 +31,20 @@ export async function GET(request: NextRequest) {
             church: { select: { name: true } },
             createdBy: { select: { name: true } }
           }
+        },
+        User: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            churchId: true,
+            Church_User_churchIdToChurch: {
+              select: {
+                id: true,
+                name: true,
+              }
+            }
+          }
         }
       },
       orderBy: { invitedAt: "desc" }
@@ -63,7 +77,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Apenas diretores podem enviar convites" }, { status: 403 })
       }
 
-      const { eventId, invitations } = body // invitations: [{ userId, role, instrument, vocalPart }]
+      const { eventId, invitations } = body // invitations: [{ userId, role, instrument, vocalPart, isGuest, guestFromChurchId, guestFromChurchName }]
       
       if (!eventId || !Array.isArray(invitations)) {
         return NextResponse.json({ error: "Dados inválidos" }, { status: 400 })
@@ -78,6 +92,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Evento não encontrado" }, { status: 404 })
       }
 
+      // Buscar informações da igreja do diretor para notificações de convidados
+      const directorChurch = await db.church.findUnique({
+        where: { id: session.user.churchId! },
+        select: { name: true }
+      })
+
       // Criar convites
       const createdInvitations = await Promise.all(
         invitations.map(inv => 
@@ -89,6 +109,8 @@ export async function POST(request: NextRequest) {
               instrument: inv.instrument,
               vocalPart: inv.vocalPart,
               status: "PENDING",
+              isGuest: inv.isGuest || false,
+              guestFromChurchId: inv.guestFromChurchId || null,
             }
           })
         )
@@ -96,18 +118,32 @@ export async function POST(request: NextRequest) {
 
       // Criar notificações para cada músico
       await Promise.all(
-        invitations.map(inv =>
-          db.notification.create({
+        invitations.map(inv => {
+          const isGuest = inv.isGuest || false
+          const invitationId = createdInvitations.find(ci => ci.userId === inv.userId)?.id
+          
+          return db.notification.create({
             data: {
               userId: inv.userId,
-              title: "Novo convite para evento!",
-              message: `Você foi convidado para "${event.title}" em ${new Date(event.date).toLocaleDateString('pt-BR')}`,
-              type: "EVENT_INVITE",
-              data: JSON.stringify({ eventId, invitationId: createdInvitations.find(ci => ci.userId === inv.userId)?.id }),
+              title: isGuest 
+                ? `Convite especial de ${directorChurch?.name || 'outra igreja'}!` 
+                : "Novo convite para evento!",
+              message: isGuest 
+                ? `Você foi convidado como músico convidado para "${event.title}" em ${new Date(event.date).toLocaleDateString('pt-BR')} (${inv.guestFromChurchName || 'sua igreja'})`
+                : `Você foi convidado para "${event.title}" em ${new Date(event.date).toLocaleDateString('pt-BR')}`,
+              type: isGuest ? "GUEST_INVITE" : "EVENT_INVITE",
+              data: JSON.stringify({ 
+                eventId, 
+                invitationId,
+                isGuest,
+                guestFromChurchId: inv.guestFromChurchId,
+                guestFromChurchName: inv.guestFromChurchName,
+                hostChurchName: directorChurch?.name
+              }),
               sentViaApp: true,
             }
           })
-        )
+        })
       )
 
       // Atualizar status do evento para PUBLISHED
@@ -277,19 +313,56 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Evento não encontrado" }, { status: 404 })
       }
 
-      // Buscar músicos disponíveis
-      const res = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/events`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: event.title,
-          type: event.type,
-          date: event.date,
-          autoSuggest: true
-        })
-      })
+      // Buscar músicos disponíveis usando lógica interna (não fetch externo)
+      const eventDate = new Date(event.date)
+      const dayOfWeek = eventDate.getDay()
+      const hour = eventDate.getHours()
       
-      const { suggestedMusicians } = await res.json()
+      let period = "sabado_manha"
+      if (dayOfWeek === 6) {
+        if (hour >= 12 && hour < 18) period = "sabado_tarde"
+        else if (hour >= 18) period = "sabado_noite"
+      } else if (dayOfWeek === 3) {
+        period = "quarta_noite"
+      } else {
+        if (hour >= 12 && hour < 18) period = "tarde"
+        else if (hour >= 18) period = "noite"
+      }
+
+      const musicians = await db.user.findMany({
+        where: {
+          churchId: session.user.churchId,
+          isActive: true,
+          isBlocked: false,
+          role: { in: ["MUSICIAN", "SINGER", "INSTRUMENTALIST"] }
+        },
+        include: {
+          MusicianProfile: true
+        }
+      })
+
+      const eventStart = new Date(event.date)
+      const eventEnd = event.endTime ? new Date(event.endTime) : new Date(eventStart.getTime() + 2 * 60 * 60 * 1000)
+
+      const availableMusicians = musicians.filter(m => {
+        if (!m.weeklyAvailability) return true
+        try {
+          const availability = JSON.parse(m.weeklyAvailability)
+          return availability[period] !== false
+        } catch {
+          return true
+        }
+      })
+
+      const suggestedMusicians = availableMusicians
+        .sort((a, b) => a.penaltyPoints - b.penaltyPoints)
+        .map(m => ({
+          id: m.id,
+          name: m.name,
+          instruments: m.MusicianProfile?.instruments ? JSON.parse(m.MusicianProfile.instruments) : [],
+          vocals: m.MusicianProfile?.vocals ? JSON.parse(m.MusicianProfile.vocals) : [],
+          penaltyPoints: m.penaltyPoints,
+        }))
 
       // Montar escala automaticamente baseado nas necessidades
       const scale: any[] = []

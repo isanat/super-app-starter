@@ -41,6 +41,13 @@ export async function GET(request: NextRequest) {
                 name: true,
                 phone: true,
                 penaltyPoints: true,
+                churchId: true,
+                Church_User_churchIdToChurch: {
+                  select: {
+                    id: true,
+                    name: true,
+                  }
+                },
                 MusicianProfile: {
                   select: {
                     instruments: true,
@@ -95,16 +102,39 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validar se a data não é no passado
+    const eventDate = new Date(date)
+    const now = new Date()
+    now.setHours(0, 0, 0, 0) // Comparar apenas a data, não a hora
+    
+    if (eventDate < now) {
+      return NextResponse.json(
+        { error: "Não é possível criar eventos em datas passadas" },
+        { status: 400 }
+      )
+    }
+
     // Se autoSuggest, apenas retorna sugestões de músicos
     if (autoSuggest) {
       const eventDate = new Date(date)
-      const dayOfWeek = eventDate.getDay() // 6 = sábado
+      const dayOfWeek = eventDate.getDay() // 0 = domingo, 3 = quarta, 6 = sábado
       
-      // Mapear dia para período
+      // Mapear dia da semana e horário para período
       const hour = eventDate.getHours()
-      let period = "sabado_manha"
-      if (hour >= 12 && hour < 18) period = "sabado_tarde"
-      if (hour >= 18) period = "sabado_noite"
+      
+      let period = "sabado_manha" // default
+      
+      if (dayOfWeek === 6) { // Sábado
+        if (hour >= 12 && hour < 18) period = "sabado_tarde"
+        else if (hour >= 18) period = "sabado_noite"
+        else period = "sabado_manha"
+      } else if (dayOfWeek === 3) { // Quarta-feira
+        period = "quarta_noite"
+      } else { // Outros dias
+        if (hour >= 12 && hour < 18) period = "tarde"
+        else if (hour >= 18) period = "noite"
+        else period = "manha"
+      }
 
       // Buscar músicos disponíveis
       const musicians = await db.user.findMany({

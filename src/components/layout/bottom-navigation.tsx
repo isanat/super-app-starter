@@ -19,8 +19,8 @@ import {
 const mobileNavigation = [
   { name: "Início", href: "/", icon: Home },
   { name: "Eventos", href: "/eventos", icon: Calendar },
-  { name: "Novo", href: "/eventos/novo", icon: Plus, isSpecial: true },
-  { name: "Músicos", href: "/musicos", icon: Users },
+  { name: "Grupos", href: "/grupos", icon: Users },
+  { name: "Novo", href: "/eventos/novo", icon: Plus, isSpecial: true, directorOnly: true },
   { name: "Perfil", href: "/perfil", icon: User },
 ]
 
@@ -43,8 +43,7 @@ export function BottomNavigation() {
 
   // Filtrar navigation baseado no role
   const visibleNavigation = mobileNavigation.filter(item => {
-    if (item.href === "/eventos/novo" && !isDirector) return false
-    if (item.href === "/musicos" && !isDirector) return false
+    if (item.directorOnly && !isDirector) return false
     return true
   })
 

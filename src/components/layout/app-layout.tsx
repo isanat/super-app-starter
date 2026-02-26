@@ -40,9 +40,9 @@ import { ThemeToggle } from "@/components/theme-toggle"
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
   { name: "Eventos", href: "/eventos", icon: Calendar },
-  { name: "Músicos", href: "/musicos", icon: Users },
+  { name: "Grupos", href: "/grupos", icon: Users },
+  { name: "Músicos", href: "/musicos", icon: Users, directorOnly: true },
   { name: "Perfil", href: "/perfil", icon: User },
-  { name: "Configurações", href: "/configuracoes", icon: Settings },
 ]
 
 export function AppLayout({ children }: { children: React.ReactNode }) {

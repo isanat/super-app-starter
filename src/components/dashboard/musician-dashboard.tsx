@@ -401,6 +401,11 @@ export function MusicianDashboard() {
                         <p className="text-sm text-slate-500">
                           {inv.event?.date && format(new Date(inv.event.date), "EEEE, dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
                         </p>
+                        {inv.isGuest && inv.guestFromChurchId && (
+                          <div className="mt-1">
+                            <Badge className="bg-amber-500 text-white text-xs">Convidado de {inv.User?.Church_User_churchIdToChurch?.name || 'outra igreja'}</Badge>
+                          </div>
+                        )}
                         {inv.event?.location && (
                           <p className="text-xs text-slate-400 flex items-center gap-1 mt-1">
                             <MapPin className="h-3 w-3" /> {inv.event.location}

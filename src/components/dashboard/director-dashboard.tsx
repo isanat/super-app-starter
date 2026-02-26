@@ -19,7 +19,7 @@ import {
   Sparkles, Church, LogOut, ChevronRight, ChevronLeft,
   User, Copy, Share2, Check, Bell, MapPin, Phone,
   Mail, Edit, CalendarDays, List, Grid3X3,
-  AlertCircle, UserPlus, Home
+  AlertCircle, UserPlus, Home, Search, ExternalLink
 } from "lucide-react"
 import { QuickActionsFooter, FloatingActionButton } from "@/components/layout/quick-actions-footer"
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, addMonths, subMonths, startOfWeek, endOfWeek } from "date-fns"
@@ -45,9 +45,16 @@ export function DirectorDashboard() {
   
   const [showNewEvent, setShowNewEvent] = useState(false)
   const [showInviteDialog, setShowInviteDialog] = useState(false)
+  const [showGuestInviteDialog, setShowGuestInviteDialog] = useState(false)
   const [step, setStep] = useState(1)
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar")
+
+  // Guest invite state
+  const [guestSearchEmail, setGuestSearchEmail] = useState("")
+  const [foundGuest, setFoundGuest] = useState<any>(null)
+  const [guestChurchName, setGuestChurchName] = useState("")
+  const [isSearchingGuest, setIsSearchingGuest] = useState(false)
 
   const [eventForm, setEventForm] = useState({
     title: "",
@@ -224,6 +231,9 @@ export function DirectorDashboard() {
           role: m.vocals?.length > 0 ? "SINGER" : "INSTRUMENTALIST",
           instrument: m.instruments?.[0],
           vocalPart: m.vocals?.[0],
+          isGuest: m.isGuest || false,
+          guestFromChurchId: m.guestFromChurchId || null,
+          guestFromChurchName: m.guestFromChurchName || null,
         })),
       })
     }
@@ -260,6 +270,66 @@ export function DirectorDashboard() {
       const message = encodeURIComponent(`🎵 *Louvor Conectado*\n\nVocê foi convidado para fazer parte do ministério de louvor!\n\nClique no link para entrar:\n${inviteLink}`)
       window.open(`https://wa.me/?text=${message}`, "_blank")
     }
+  }
+
+  // Search guest musician by email
+  const handleSearchGuest = async () => {
+    if (!guestSearchEmail) {
+      toast.error("Digite um email para buscar")
+      return
+    }
+
+    setIsSearchingGuest(true)
+    setFoundGuest(null)
+
+    try {
+      const res = await fetch(`/api/users/search?email=${encodeURIComponent(guestSearchEmail)}`)
+      const data = await res.json()
+
+      if (data.error) {
+        toast.error(data.error)
+        setFoundGuest(null)
+      } else {
+        setFoundGuest(data.user)
+        if (data.user.church) {
+          setGuestChurchName(data.user.church.name)
+        }
+      }
+    } catch (error) {
+      toast.error("Erro ao buscar usuário")
+      setFoundGuest(null)
+    } finally {
+      setIsSearchingGuest(false)
+    }
+  }
+
+  // Add guest to selected musicians
+  const handleAddGuestMusician = () => {
+    if (!foundGuest) return
+
+    const guestMusician = {
+      id: foundGuest.id,
+      name: foundGuest.name,
+      email: foundGuest.email,
+      instruments: foundGuest.instruments || [],
+      vocals: foundGuest.vocals || [],
+      isGuest: true,
+      guestFromChurchId: foundGuest.church?.id,
+      guestFromChurchName: guestChurchName || foundGuest.church?.name || "Igreja não informada",
+    }
+
+    // Check if already selected
+    if (selectedMusicians.find(m => m.id === foundGuest.id)) {
+      toast.error("Músico já está na lista")
+      return
+    }
+
+    setSelectedMusicians(prev => [...prev, guestMusician])
+    toast.success(`${foundGuest.name} adicionado como convidado!`)
+    setShowGuestInviteDialog(false)
+    setFoundGuest(null)
+    setGuestSearchEmail("")
+    setGuestChurchName("")
   }
 
   const weekDays = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
@@ -739,8 +809,52 @@ export function DirectorDashboard() {
                       </div>
                     )
                   })}
+                  {/* Selected guest musicians */}
+                  {selectedMusicians.filter(m => m.isGuest).map((musician) => (
+                    <div 
+                      key={musician.id} 
+                      className="p-3 rounded-xl border border-amber-500 bg-amber-50 dark:bg-amber-950"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarFallback className="bg-amber-500">{musician.name?.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">{musician.name}</p>
+                              <Badge className="bg-amber-500 text-white text-xs">Convidado</Badge>
+                            </div>
+                            <div className="flex gap-1 flex-wrap items-center">
+                              {musician.instruments?.map((inst: string) => (
+                                <Badge key={inst} variant="outline" className="text-xs">{inst}</Badge>
+                              ))}
+                              <span className="text-xs text-amber-600">{musician.guestFromChurchName}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => setSelectedMusicians(prev => prev.filter(m => m.id !== musician.id))}
+                          className="text-red-500"
+                        >
+                          Remover
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </ScrollArea>
+              {/* Add guest musician button */}
+              <Button 
+                variant="outline" 
+                className="w-full mt-3 rounded-xl border-amber-500 text-amber-600 hover:bg-amber-50"
+                onClick={() => setShowGuestInviteDialog(true)}
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Adicionar Músico Convidado (outra igreja)
+              </Button>
               <div className="flex justify-between pt-4">
                 <Button variant="outline" onClick={() => setStep(1)} className="rounded-xl">Voltar</Button>
                 <Button className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl" onClick={() => setStep(3)} disabled={selectedMusicians.length === 0}>
@@ -764,7 +878,12 @@ export function DirectorDashboard() {
                 <div className="space-y-2 max-h-32 overflow-y-auto">
                   {selectedMusicians.map((m) => (
                     <div key={m.id} className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                      <span className="text-sm">{m.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{m.name}</span>
+                        {m.isGuest && (
+                          <Badge className="bg-amber-500 text-white text-xs">Convidado - {m.guestFromChurchName}</Badge>
+                        )}
+                      </div>
                       <div className="flex gap-1">
                         {m.instruments?.map((inst: string) => (
                           <Badge key={inst} variant="outline" className="text-xs">{inst}</Badge>
@@ -822,6 +941,96 @@ export function DirectorDashboard() {
               </svg>
               Compartilhar no WhatsApp
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Guest Invite Dialog */}
+      <Dialog open={showGuestInviteDialog} onOpenChange={setShowGuestInviteDialog}>
+        <DialogContent className="max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ExternalLink className="h-5 w-5 text-amber-500" />
+              Adicionar Músico Convidado
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <p className="text-sm text-slate-500">
+              Busque um músico de outra igreja pelo email para convidá-lo como convidado especial.
+            </p>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Email do músico"
+                type="email"
+                value={guestSearchEmail}
+                onChange={(e) => setGuestSearchEmail(e.target.value)}
+                className="rounded-xl"
+                onKeyDown={(e) => e.key === 'Enter' && handleSearchGuest()}
+              />
+              <Button 
+                onClick={handleSearchGuest} 
+                disabled={isSearchingGuest}
+                className="rounded-xl"
+              >
+                {isSearchingGuest ? (
+                  <Sparkles className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+
+            {/* Found guest */}
+            {foundGuest && (
+              <div className="p-4 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950 dark:border-amber-800">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-12 w-12">
+                    <AvatarFallback className="bg-amber-500 text-white">
+                      {foundGuest.name?.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <p className="font-medium">{foundGuest.name}</p>
+                    <p className="text-sm text-slate-500">{foundGuest.email}</p>
+                    <div className="flex gap-1 flex-wrap mt-1">
+                      {foundGuest.instruments?.map((inst: string) => (
+                        <Badge key={inst} variant="outline" className="text-xs">{inst}</Badge>
+                      ))}
+                      {foundGuest.vocals?.map((vocal: string) => (
+                        <Badge key={vocal} variant="outline" className="text-xs">{vocal}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
+                {foundGuest.isSameChurch ? (
+                  <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                    <p className="text-sm text-blue-600 dark:text-blue-300">
+                      Este músico já é da sua igreja. Adicione-o normalmente na lista.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-3 space-y-3">
+                    <div className="space-y-2">
+                      <Label className="text-sm">Igreja de origem</Label>
+                      <Input
+                        placeholder="Nome da igreja do músico"
+                        value={guestChurchName}
+                        onChange={(e) => setGuestChurchName(e.target.value)}
+                        className="rounded-xl"
+                      />
+                    </div>
+                    <Button 
+                      className="w-full bg-gradient-to-r from-amber-500 to-amber-600 rounded-xl"
+                      onClick={handleAddGuestMusician}
+                    >
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Adicionar como Convidado
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

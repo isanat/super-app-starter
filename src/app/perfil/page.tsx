@@ -66,6 +66,9 @@ export default function PerfilPage() {
   const [selectedVocals, setSelectedVocals] = React.useState<string[]>([])
   const [availability, setAvailability] = React.useState<Record<string, boolean>>({})
   const [copied, setCopied] = React.useState(false)
+  const [avatarUrl, setAvatarUrl] = React.useState(user?.avatar || '')
+  const [isUploading, setIsUploading] = React.useState(false)
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   // Buscar dados do perfil
   const { data: profileData, isLoading: isLoadingProfile } = useQuery({
@@ -201,6 +204,55 @@ export default function PerfilPage() {
     }
   }
 
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validar tipo
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast.error('Formato inválido. Use JPG, PNG ou WebP.')
+      return
+    }
+
+    // Validar tamanho (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Arquivo muito grande. Máximo 2MB.')
+      return
+    }
+
+    setIsUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('type', 'avatar')
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await res.json()
+      if (res.ok && data.url) {
+        setAvatarUrl(data.url)
+        toast.success('Foto atualizada!')
+      } else {
+        throw new Error(data.error || 'Erro no upload')
+      }
+    } catch (error) {
+      toast.error('Erro ao enviar foto')
+    } finally {
+      setIsUploading(false)
+      // Limpar input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
   const participationHistory = historyData?.invitations || []
   
   const musicianStats = {
@@ -258,17 +310,30 @@ export default function PerfilPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Input de arquivo oculto */}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleFileChange}
+                  />
+                  
                   <div className="flex items-center gap-4">
                     <Avatar className="h-20 w-20">
-                      <AvatarImage src={user?.avatar} />
+                      <AvatarImage src={avatarUrl || user?.avatar} />
                       <AvatarFallback className="text-lg bg-purple-100 text-purple-700">
                         {user?.name?.split(' ').map((n) => n[0]).join('')}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <Button variant="outline" size="sm">
-                        <Camera className="mr-2 h-4 w-4" />
-                        Alterar foto
+                      <Button variant="outline" size="sm" onClick={handleAvatarClick} disabled={isUploading}>
+                        {isUploading ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Camera className="mr-2 h-4 w-4" />
+                        )}
+                        {isUploading ? 'Enviando...' : 'Alterar foto'}
                       </Button>
                       <p className="text-xs text-muted-foreground mt-1">
                         JPG, PNG ou GIF. Máx 2MB.
@@ -492,15 +557,19 @@ export default function PerfilPage() {
                   <CardContent className="space-y-4">
                     <div className="flex items-center gap-4">
                       <Avatar className="h-20 w-20">
-                        <AvatarImage src={user?.avatar} />
+                        <AvatarImage src={avatarUrl || user?.avatar} />
                         <AvatarFallback className="text-lg bg-emerald-100 text-emerald-700">
                           {user?.name?.split(' ').map((n) => n[0]).join('')}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <Button variant="outline" size="sm">
-                          <Camera className="mr-2 h-4 w-4" />
-                          Alterar foto
+                        <Button variant="outline" size="sm" onClick={handleAvatarClick} disabled={isUploading}>
+                          {isUploading ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <Camera className="mr-2 h-4 w-4" />
+                          )}
+                          {isUploading ? 'Enviando...' : 'Alterar foto'}
                         </Button>
                         <p className="text-xs text-muted-foreground mt-1">
                           JPG, PNG ou GIF. Máx 2MB.

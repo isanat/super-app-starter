@@ -3,26 +3,16 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
 
-// GET - Buscar dados da igreja do usuário
-export async function GET(request: NextRequest) {
+// GET - Buscar informações da igreja
+export async function GET() {
   try {
     const session = await getServerSession(authOptions)
-    
-    if (!session?.user?.id) {
+    if (!session?.user?.churchId) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
     }
 
-    const user = await db.user.findUnique({
-      where: { id: session.user.id },
-      select: { churchId: true, role: true }
-    })
-
-    if (!user?.churchId) {
-      return NextResponse.json({ church: null })
-    }
-
     const church = await db.church.findUnique({
-      where: { id: user.churchId },
+      where: { id: session.user.churchId },
       select: {
         id: true,
         name: true,
@@ -33,18 +23,50 @@ export async function GET(request: NextRequest) {
         phone: true,
         email: true,
         serviceTimes: true,
-        _count: {
-          select: { User_User_churchIdToChurch: true }
-        }
       }
     })
 
     return NextResponse.json({ church })
   } catch (error) {
     console.error("Erro ao buscar igreja:", error)
-    return NextResponse.json(
-      { error: "Erro ao buscar igreja" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Erro ao buscar igreja" }, { status: 500 })
+  }
+}
+
+// PATCH - Atualizar informações da igreja
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.churchId) {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+    }
+
+    // Apenas diretores podem atualizar
+    if (session.user.role !== "DIRECTOR" && session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Apenas diretores podem atualizar" }, { status: 403 })
+    }
+
+    const body = await request.json()
+    const { name, slug, address, city, state, phone, email, serviceTimes } = body
+
+    const church = await db.church.update({
+      where: { id: session.user.churchId },
+      data: {
+        name,
+        slug,
+        address,
+        city,
+        state,
+        phone,
+        email,
+        serviceTimes,
+        updatedAt: new Date()
+      }
+    })
+
+    return NextResponse.json({ church })
+  } catch (error) {
+    console.error("Erro ao atualizar igreja:", error)
+    return NextResponse.json({ error: "Erro ao atualizar igreja" }, { status: 500 })
   }
 }
