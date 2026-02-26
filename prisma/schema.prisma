@@ -158,17 +158,17 @@ model MusicGroup {
 }
 
 model MusicianProfile {
-  id              String   @id
+  id              String   @id @default(cuid())
   userId          String   @unique
-  instruments     String
-  vocals          String?
+  instruments     String   @default("[]")
+  vocals          String?  @default("[]")
   skills          String?
   yearsExperience Int?
   bio             String?
   totalEvents     Int      @default(0)
   totalCancels    Int      @default(0)
   createdAt       DateTime @default(now())
-  updatedAt       DateTime
+  updatedAt       DateTime @updatedAt
   User            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -252,7 +252,7 @@ model User {
   lastEventDate                DateTime?
   
   createdAt                    DateTime          @default(now())
-  updatedAt                    DateTime
+  updatedAt                    DateTime          @updatedAt
   churchId                     String?
   Account                      Account[]
   Church_Church_adminIdToUser  Church?           @relation("Church_adminIdToUser")
@@ -260,7 +260,7 @@ model User {
   EventInvitation              EventInvitation[]
   GroupMember                  GroupMember[]
   MusicGroup                   MusicGroup[]
-  MusicianProfile              MusicianProfile?
+  musicianProfile              MusicianProfile?
   Notification                 Notification[]
   PenaltyHistory               PenaltyHistory[]
   Session                      Session[]

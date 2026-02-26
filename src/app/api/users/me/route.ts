@@ -30,7 +30,7 @@ export async function GET() {
         level: true,
         streak: true,
         church: {
-          select: { id: true, name: true, slug: true }
+          select: { id: true, name: true, slug: true, city: true, state: true }
         },
         musicianProfile: {
           select: {
@@ -66,6 +66,8 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const { name, phone, instruments, vocals, bio, weeklyAvailability } = body
 
+    console.log("📥 Atualizando perfil:", { name, phone, instruments, vocals, bio, weeklyAvailability })
+
     // Atualizar dados básicos do usuário
     const updateData: any = {}
     if (name !== undefined) updateData.name = name
@@ -79,31 +81,32 @@ export async function PUT(request: NextRequest) {
       })
     }
 
-    // Atualizar perfil de músico - sempre incluir instruments pois é obrigatório
-    const profileUpdateData: any = {}
-    if (instruments !== undefined) {
-      profileUpdateData.instruments = Array.isArray(instruments) 
-        ? JSON.stringify(instruments) 
-        : instruments
-    }
-    if (vocals !== undefined) {
-      profileUpdateData.vocals = Array.isArray(vocals) 
-        ? JSON.stringify(vocals) 
-        : vocals
-    }
-    if (bio !== undefined) profileUpdateData.bio = bio
+    // Atualizar perfil de músico
+    if (instruments !== undefined || vocals !== undefined || bio !== undefined) {
+      const profileData: any = {}
+      
+      if (instruments !== undefined) {
+        profileData.instruments = Array.isArray(instruments) 
+          ? JSON.stringify(instruments) 
+          : instruments
+      }
+      if (vocals !== undefined) {
+        profileData.vocals = Array.isArray(vocals) 
+          ? JSON.stringify(vocals) 
+          : vocals
+      }
+      if (bio !== undefined) {
+        profileData.bio = bio
+      }
 
-    // Sempre fazer upsert se há dados para atualizar
-    if (Object.keys(profileUpdateData).length > 0 || instruments !== undefined || vocals !== undefined) {
       await db.musicianProfile.upsert({
         where: { userId: session.user.id },
-        update: profileUpdateData,
+        update: profileData,
         create: {
           userId: session.user.id,
-          instruments: profileUpdateData.instruments || "[]",
-          vocals: profileUpdateData.vocals || null,
-          bio: profileUpdateData.bio || null,
-          updatedAt: new Date(),
+          instruments: profileData.instruments || "[]",
+          vocals: profileData.vocals || null,
+          bio: profileData.bio || null,
         }
       })
     }
