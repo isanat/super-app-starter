@@ -32,20 +32,20 @@ import {
   Music,
   Church,
   Plus,
-  BarChart3,
-  Target,
+  Settings,
+  UserCircle,
 } from "lucide-react"
 import { BottomNavigation } from "./bottom-navigation"
 import { ThemeToggle } from "@/components/theme-toggle"
 
+// Simplified navigation - only for desktop sidebar
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
   { name: "Eventos", href: "/eventos", icon: Calendar },
   { name: "Grupos", href: "/grupos", icon: Users },
-  { name: "Músicos", href: "/musicos", icon: Users, directorOnly: true },
-  { name: "Compromissos", href: "/compromissos", icon: Target },
-  { name: "Relatórios", href: "/relatorios", icon: BarChart3, directorOnly: true },
-  { name: "Perfil", href: "/perfil", icon: User },
+  { name: "Músicos", href: "/musicos", icon: UserCircle, directorOnly: true },
+  { name: "Configurações", href: "/configuracoes", icon: Settings, directorOnly: true },
+  { name: "Meu Perfil", href: "/perfil", icon: User },
 ]
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -54,7 +54,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession()
   const [notifications, setNotifications] = React.useState(0)
 
-  // Buscar notificações não lidas
+  // Fetch unread notifications
   React.useEffect(() => {
     if (session?.user?.id) {
       fetch("/api/notifications?unreadOnly=true")
@@ -72,7 +72,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+        <div className="animate-spin rounded-full h-7 w-7 border-2 border-emerald-500 border-t-transparent"></div>
       </div>
     )
   }
@@ -87,35 +87,36 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       {/* Desktop Sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-50 hidden w-64 border-r bg-white dark:bg-slate-800 lg:block">
+      <aside className="fixed inset-y-0 left-0 z-50 hidden w-60 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 lg:block">
         <div className="flex h-full flex-col">
           {/* Logo */}
-          <div className="flex h-16 items-center gap-2 border-b px-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-lg">
-              <Music className="h-6 w-6" />
+          <div className="flex h-14 items-center gap-2.5 border-b border-slate-200 dark:border-slate-800 px-4">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-white">
+              <Music className="h-4 w-4" />
             </div>
             <div className="flex flex-col">
-              <span className="font-bold text-lg leading-tight">Louvor</span>
-              <span className="text-xs text-muted-foreground leading-tight">Conectado</span>
+              <span className="font-semibold text-sm">Louvor</span>
+              <span className="text-[10px] text-slate-500 -mt-0.5">Conectado</span>
             </div>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 space-y-1 p-4">
+          <nav className="flex-1 space-y-0.5 p-2">
             {navigation.map((item) => {
+              if (item.directorOnly && !isDirector) return null
               const isActive = pathname === item.href
               return (
                 <Link
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                    "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                     isActive
-                      ? "bg-emerald-600 text-white shadow-md"
-                      : "text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-foreground"
+                      ? "bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400"
+                      : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200"
                   )}
                 >
-                  <item.icon className="h-5 w-5" />
+                  <item.icon className="h-4 w-4" />
                   {item.name}
                 </Link>
               )
@@ -124,9 +125,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             {isDirector && (
               <Link
                 href="/eventos/novo"
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-800 mt-4"
+                className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium bg-emerald-500 text-white hover:bg-emerald-600 mt-2"
               >
-                <Plus className="h-5 w-5" />
+                <Plus className="h-4 w-4" />
                 Novo Evento
               </Link>
             )}
@@ -134,203 +135,85 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
           {/* Church Info */}
           {user.church?.name && (
-            <div className="border-t p-4">
-              <div className="flex items-center gap-3 rounded-lg bg-slate-100 dark:bg-slate-700 px-3 py-2">
-                <Church className="h-5 w-5 text-muted-foreground" />
-                <div className="flex flex-col">
-                  <span className="text-xs text-muted-foreground">Igreja</span>
-                  <span className="text-sm font-medium">{user.church.name}</span>
-                </div>
+            <div className="border-t border-slate-200 dark:border-slate-800 p-3">
+              <div className="flex items-center gap-2 rounded-lg bg-slate-50 dark:bg-slate-800 px-3 py-2">
+                <Church className="h-4 w-4 text-slate-400" />
+                <span className="text-xs text-slate-600 dark:text-slate-300 truncate">{user.church.name}</span>
               </div>
             </div>
           )}
 
-          {/* Penalty Warning */}
-          {user.penaltyPoints > 0 && (
-            <div className="border-t p-4">
-              <div className="flex items-center gap-3 rounded-lg bg-red-50 dark:bg-red-950 px-3 py-2">
-                <div className="flex flex-col">
-                  <span className="text-xs text-red-600 dark:text-red-400">Pontos de penalização</span>
-                  <span className="text-sm font-medium text-red-700 dark:text-red-300">{user.penaltyPoints}/9</span>
-                </div>
+          {/* Points Warning */}
+          {(user.penaltyPoints || 0) > 0 && (
+            <div className="border-t border-slate-200 dark:border-slate-800 p-3">
+              <div className="flex items-center gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/50 px-3 py-2">
+                <span className="text-xs text-amber-700 dark:text-amber-300">
+                  <span className="font-medium">{user.penaltyPoints}/9</span> pontos de atenção
+                </span>
               </div>
             </div>
           )}
         </div>
       </aside>
 
-      {/* Mobile Header */}
-      <div className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b bg-white dark:bg-slate-800 px-4 lg:hidden shadow-sm">
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="shrink-0 h-10 w-10">
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Abrir menu</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-64 p-0">
-            <div className="flex h-full flex-col">
-              {/* Logo */}
-              <div className="flex h-16 items-center gap-2 border-b px-6">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-lg">
-                  <Music className="h-6 w-6" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="font-bold text-lg leading-tight">Louvor</span>
-                  <span className="text-xs text-muted-foreground leading-tight">Conectado</span>
-                </div>
-              </div>
-
-              {/* Navigation */}
-              <nav className="flex-1 space-y-1 p-4">
-                {navigation.map((item) => {
-                  const isActive = pathname === item.href
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                        isActive
-                          ? "bg-emerald-600 text-white"
-                          : "text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-700"
-                      )}
-                    >
-                      <item.icon className="h-5 w-5" />
-                      {item.name}
-                    </Link>
-                  )
-                })}
-                
-                {isDirector && (
-                  <Link
-                    href="/eventos/novo"
-                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300"
-                  >
-                    <Plus className="h-5 w-5" />
-                    Novo Evento
-                  </Link>
-                )}
-              </nav>
-
-              {/* Church Info */}
-              {user.church?.name && (
-                <div className="border-t p-4">
-                  <div className="flex items-center gap-3 rounded-lg bg-slate-100 dark:bg-slate-700 px-3 py-2">
-                    <Church className="h-5 w-5 text-muted-foreground" />
-                    <div className="flex flex-col">
-                      <span className="text-xs text-muted-foreground">Igreja</span>
-                      <span className="text-sm font-medium">{user.church.name}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Logout */}
-              <div className="border-t p-4">
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="h-5 w-5 mr-3" />
-                  Sair
-                </Button>
-              </div>
-            </div>
-          </SheetContent>
-        </Sheet>
-
-        <div className="flex flex-1 items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-white">
-            <Music className="h-4 w-4" />
-          </div>
-          <span className="font-semibold text-sm">Louvor Conectado</span>
-        </div>
-
-        <ThemeToggle />
-
-        <Button variant="ghost" size="icon" className="relative h-10 w-10">
-          <Bell className="h-5 w-5" />
-          {notifications > 0 && (
-            <Badge
-              variant="destructive"
-              className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center"
-            >
-              {notifications}
-            </Badge>
-          )}
-        </Button>
+      {/* Mobile Header - Only on some pages */}
+      <div className="lg:hidden">
+        {/* This is handled by individual dashboards now */}
       </div>
 
       {/* Main Content */}
-      <div className="lg:pl-64">
+      <div className="lg:pl-60">
         {/* Desktop Header */}
-        <header className="sticky top-0 z-30 hidden h-16 items-center justify-between border-b bg-white dark:bg-slate-800 px-6 lg:flex">
-          <div className="flex items-center gap-4">
-            <h1 className="text-lg font-semibold">
+        <header className="sticky top-0 z-30 hidden h-14 items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 lg:flex">
+          <div className="flex items-center gap-2">
+            <h1 className="text-sm font-semibold">
               {navigation.find((n) => n.href === pathname)?.name || "Dashboard"}
             </h1>
           </div>
 
-          <div className="flex items-center gap-4">
-            {/* Theme Toggle */}
+          <div className="flex items-center gap-2">
             <ThemeToggle />
 
-            {/* Notifications */}
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
+            <Button variant="ghost" size="icon" className="relative h-8 w-8">
+              <Bell className="h-4 w-4" />
               {notifications > 0 && (
                 <Badge
                   variant="destructive"
-                  className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center"
+                  className="absolute -right-1 -top-1 h-4 w-4 rounded-full p-0 text-[9px] flex items-center justify-center"
                 >
                   {notifications}
                 </Badge>
               )}
             </Button>
 
-            {/* User Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                  <Avatar className="h-10 w-10">
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Avatar className="h-8 w-8">
                     <AvatarImage src={user.avatar || undefined} alt={user.name || ""} />
-                    <AvatarFallback className="bg-emerald-600 text-white">
-                      {user.name?.split(" ").map((n) => n[0]).join("").toUpperCase() || "U"}
+                    <AvatarFallback className="bg-emerald-500 text-white text-xs">
+                      {user.name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "U"}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuContent className="w-52" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user.name}</p>
-                    <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-                    <Badge variant="secondary" className="w-fit mt-2">
-                      {user.role === "DIRECTOR" ? "Diretor" : 
-                       user.role === "ADMIN" ? "Admin" : 
-                       user.role === "SINGER" ? "Cantor" :
-                       user.role === "INSTRUMENTALIST" ? "Instrumentalista" : "Músico"}
-                    </Badge>
+                  <div className="flex flex-col space-y-0.5">
+                    <p className="text-sm font-medium">{user.name}</p>
+                    <p className="text-xs text-muted-foreground">{user.email}</p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/perfil">
-                    <User className="mr-2 h-4 w-4" />
+                  <Link href="/perfil" className="text-sm">
+                    <User className="mr-2 h-3.5 w-3.5" />
                     Meu Perfil
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/compromissos">
-                    <Target className="mr-2 h-4 w-4" />
-                    Meus Compromissos
-                  </Link>
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-red-600">
-                  <LogOut className="mr-2 h-4 w-4" />
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600 text-sm">
+                  <LogOut className="mr-2 h-3.5 w-3.5" />
                   Sair
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -339,7 +222,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page Content */}
-        <main className="p-4 lg:p-6 pb-mobile">
+        <main className="lg:p-4">
           {children}
         </main>
       </div>

@@ -500,6 +500,17 @@ input:focus, textarea:focus, select:focus {
   padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 }
 
+/* Scroll snap for horizontal cards */
+.scroll-snap-x {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+.scroll-snap-start {
+  scroll-snap-align: start;
+}
+
 /* Swipe indicator */
 .swipe-indicator {
   @apply w-10 h-1 bg-slate-300 dark:bg-slate-600 rounded-full mx-auto mt-2;
