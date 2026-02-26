@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { PhoneInput } from "@/components/ui/phone-input"
 import { Music, Eye, EyeOff, Loader2, Church, User, Mic, Guitar } from "lucide-react"
 import { toast } from "sonner"
 
@@ -244,14 +245,13 @@ export default function LoginPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="register-phone">WhatsApp</Label>
-                    <Input
+                    <PhoneInput
                       id="register-phone"
-                      type="tel"
-                      placeholder="(00) 00000-0000"
                       value={registerData.phone}
-                      onChange={(e) =>
-                        setRegisterData({ ...registerData, phone: e.target.value })
+                      onChange={(value) =>
+                        setRegisterData({ ...registerData, phone: value })
                       }
+                      placeholder="(00) 00000-0000"
                     />
                   </div>
 

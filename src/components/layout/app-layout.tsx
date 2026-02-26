@@ -26,13 +26,14 @@ import {
   Calendar,
   Users,
   User,
-  Settings,
   Menu,
   Bell,
   LogOut,
   Music,
   Church,
   Plus,
+  BarChart3,
+  Target,
 } from "lucide-react"
 import { BottomNavigation } from "./bottom-navigation"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -42,6 +43,8 @@ const navigation = [
   { name: "Eventos", href: "/eventos", icon: Calendar },
   { name: "Grupos", href: "/grupos", icon: Users },
   { name: "Músicos", href: "/musicos", icon: Users, directorOnly: true },
+  { name: "Compromissos", href: "/compromissos", icon: Target },
+  { name: "Relatórios", href: "/relatorios", icon: BarChart3, directorOnly: true },
   { name: "Perfil", href: "/perfil", icon: User },
 ]
 
@@ -320,9 +323,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/configuracoes">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Configurações
+                  <Link href="/compromissos">
+                    <Target className="mr-2 h-4 w-4" />
+                    Meus Compromissos
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
