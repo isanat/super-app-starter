@@ -26,6 +26,8 @@ import { toast } from "sonner"
 import { signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { QuickActionsFooter, FloatingActionButton } from "@/components/layout/quick-actions-footer"
+import { RankingCard } from "@/components/gamification/gamification-card"
 
 const EVENT_TYPES = [
   { id: "SABBATH_SCHOOL", name: "Escola Sabatina", icon: "📚", bg: "bg-blue-50 dark:bg-blue-950" },
@@ -893,6 +895,14 @@ export function DirectorDashboard() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Quick Actions Footer */}
+      <QuickActionsFooter
+        userType="director"
+        onNewEvent={() => setShowNewEvent(true)}
+        onInvite={() => setShowInviteDialog(true)}
+        notificationCount={unreadNotifications.length}
+      />
     </div>
   )
 }

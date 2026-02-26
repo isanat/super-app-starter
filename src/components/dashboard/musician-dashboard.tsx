@@ -21,6 +21,8 @@ import { ptBR } from "date-fns/locale"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { QuickActionsFooter } from "@/components/layout/quick-actions-footer"
+import { GamificationCard } from "@/components/gamification/gamification-card"
 
 const EVENT_TYPES: Record<string, { name: string; icon: string; color: string; bg: string }> = {
   SABBATH_SCHOOL: { name: "Escola Sabatina", icon: "📚", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950" },
@@ -588,6 +590,18 @@ export function MusicianDashboard() {
           )}
         </div>
       </main>
+
+      {/* Gamification Card */}
+      <div className="px-4 pb-4">
+        <GamificationCard />
+      </div>
+
+      {/* Quick Actions Footer */}
+      <QuickActionsFooter
+        userType="musician"
+        pendingCount={pendingInvitations.length}
+        notificationCount={unreadNotifications.length}
+      />
 
       {/* Decline Dialog */}
       <Dialog open={showDeclineDialog} onOpenChange={setShowDeclineDialog}>
