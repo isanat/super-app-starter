@@ -13,10 +13,11 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Switch } from "@/components/ui/switch"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useTheme } from "next-themes"
+import { usePWAInstall } from "@/components/pwa-register"
 import { 
   User, Mail, Phone, Camera, Save, Loader2, Music, Calendar, 
   CheckCircle, Church, MapPin, ChevronLeft, Clock, Trophy,
-  LogOut, Sun, Moon, Settings
+  LogOut, Sun, Moon, Settings, Download, Smartphone
 } from "lucide-react"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -48,6 +49,7 @@ export default function PerfilPage() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const { theme, setTheme } = useTheme()
+  const { isInstalled, canInstall, install } = usePWAInstall()
   
   const [name, setName] = React.useState("")
   const [phone, setPhone] = React.useState("")
@@ -519,6 +521,28 @@ export default function PerfilPage() {
         {/* Actions Card */}
         <Card className="border border-slate-200 dark:border-slate-700">
           <CardContent className="p-3 space-y-2">
+            {/* Install App Button - Only show if not installed and can install */}
+            {canInstall && !isInstalled && (
+              <button
+                onClick={install}
+                className="w-full flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600 transition-all shadow-md"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Download className="h-4 w-4" />
+                  <span className="text-sm font-medium">Instalar App</span>
+                </div>
+                <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">Novo!</span>
+              </button>
+            )}
+
+            {/* Installed indicator */}
+            {isInstalled && (
+              <div className="w-full flex items-center gap-2.5 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400">
+                <Smartphone className="h-4 w-4" />
+                <span className="text-sm font-medium">App instalado ✓</span>
+              </div>
+            )}
+
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
