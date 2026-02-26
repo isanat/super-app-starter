@@ -271,6 +271,9 @@ model User {
   achievements                 UserAchievement[]
   pointHistory                 PointHistory[]
 
+  // FCM Push Notifications
+  FcmToken                     FcmToken[]
+
   @@index([email])
   @@index([role])
 }
@@ -430,4 +433,23 @@ enum PointAction {
   STREAK_BONUS
   ACHIEVEMENT_BONUS
   LEVEL_UP
+}
+
+// ==================== FCM PUSH NOTIFICATIONS ====================
+
+model FcmToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  deviceId  String?  // Identificador do dispositivo
+  platform  String?  // web, android, ios
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lastUsed  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
 }
