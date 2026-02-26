@@ -35,6 +35,7 @@ import {
   Plus,
 } from "lucide-react"
 import { BottomNavigation } from "./bottom-navigation"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
@@ -244,6 +245,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <span className="font-semibold text-sm">Louvor Conectado</span>
         </div>
 
+        <ThemeToggle />
+
         <Button variant="ghost" size="icon" className="relative h-10 w-10">
           <Bell className="h-5 w-5" />
           {notifications > 0 && (
@@ -268,6 +271,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Theme Toggle */}
+            <ThemeToggle />
+
             {/* Notifications */}
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
