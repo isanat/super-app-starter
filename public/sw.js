@@ -1,9 +1,9 @@
 // Louvor Conectado - Service Worker
-// Version: 5.0.0 - FIREBASE FCM PUSH NOTIFICATIONS
+// Version: 6.0.0 - TRUE PWA INSTALLABLE APP
 
-const CACHE_NAME = 'louvor-conectado-v5';
-const STATIC_CACHE_NAME = 'louvor-static-v5';
-const API_CACHE_NAME = 'louvor-api-v5';
+const CACHE_NAME = 'louvor-conectado-v6';
+const STATIC_CACHE_NAME = 'louvor-static-v6';
+const API_CACHE_NAME = 'louvor-api-v6';
 
 // Arquivos estáticos para cache
 const STATIC_ASSETS = [
@@ -11,13 +11,13 @@ const STATIC_ASSETS = [
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
-  '/icons/icon-192.svg',
-  '/icons/icon-512.svg'
+  '/icons/icon-192-maskable.png',
+  '/icons/icon-512-maskable.png'
 ];
 
 // Instalação do Service Worker
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing Service Worker...');
+  console.log('[SW] Installing Service Worker v6...');
   
   event.waitUntil(
     caches.open(STATIC_CACHE_NAME)
@@ -37,7 +37,7 @@ self.addEventListener('install', (event) => {
 
 // Ativação do Service Worker
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating Service Worker...');
+  console.log('[SW] Activating Service Worker v6...');
   
   event.waitUntil(
     caches.keys()
@@ -56,7 +56,7 @@ self.addEventListener('activate', (event) => {
         );
       })
       .then(() => {
-        console.log('[SW] Service Worker activated');
+        console.log('[SW] Service Worker activated - PWA Ready!');
         return self.clients.claim();
       })
   );
@@ -67,11 +67,8 @@ async function cacheFirst(request) {
   const cachedResponse = await caches.match(request);
   
   if (cachedResponse) {
-    console.log('[SW] Cache HIT (static):', request.url);
     return cachedResponse;
   }
-  
-  console.log('[SW] Cache MISS (static):', request.url);
   
   try {
     const networkResponse = await fetch(request);
@@ -85,7 +82,6 @@ async function cacheFirst(request) {
   } catch (error) {
     console.error('[SW] Network request failed for static:', error);
     
-    // Retorna página offline básica para navegação
     if (request.mode === 'navigate') {
       return caches.match('/');
     }
@@ -99,34 +95,18 @@ async function networkFirst(request) {
   const cache = await caches.open(API_CACHE_NAME);
   
   try {
-    console.log('[SW] Network request (API):', request.url);
     const networkResponse = await fetch(request);
     
-    if (networkResponse.ok) {
-      // Cache apenas respostas GET
-      if (request.method === 'GET') {
-        cache.put(request, networkResponse.clone());
-      }
-      return networkResponse;
+    if (networkResponse.ok && request.method === 'GET') {
+      cache.put(request, networkResponse.clone());
     }
-    
-    // Se a resposta não foi ok, tenta o cache
-    const cachedResponse = await cache.match(request);
-    if (cachedResponse) {
-      console.log('[SW] Using cached API response:', request.url);
-      return cachedResponse;
-    }
-    
     return networkResponse;
   } catch (error) {
-    console.log('[SW] Network failed, trying cache:', request.url);
-    
     const cachedResponse = await cache.match(request);
     if (cachedResponse) {
       return cachedResponse;
     }
     
-    // Retorna resposta de erro offline
     return new Response(
       JSON.stringify({ 
         error: 'offline', 
@@ -141,32 +121,10 @@ async function networkFirst(request) {
   }
 }
 
-// Estratégia: Stale While Revalidate para recursos dinâmicos
-async function staleWhileRevalidate(request) {
-  const cache = await caches.open(CACHE_NAME);
-  const cachedResponse = await cache.match(request);
-  
-  const fetchPromise = fetch(request)
-    .then((networkResponse) => {
-      if (networkResponse.ok) {
-        cache.put(request, networkResponse.clone());
-      }
-      return networkResponse;
-    })
-    .catch(() => cachedResponse);
-  
-  return cachedResponse || fetchPromise;
-}
-
 // Interceptação de requisições
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
-  
-  // Ignora requisições não-GET para cache (exceto para network)
-  if (request.method !== 'GET' && !url.pathname.startsWith('/api/')) {
-    return;
-  }
   
   // Ignora chrome-extension e outros protocolos
   if (!url.protocol.startsWith('http')) {
@@ -190,14 +148,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // Páginas de navegação - Stale While Revalidate
+  // Páginas de navegação - Network First com fallback
   if (request.mode === 'navigate') {
-    event.respondWith(staleWhileRevalidate(request));
+    event.respondWith(
+      fetch(request)
+        .catch(() => caches.match('/'))
+    );
     return;
   }
-  
-  // Default: Network First
-  event.respondWith(networkFirst(request));
 });
 
 // Listener para mensagens do cliente
@@ -217,16 +175,7 @@ self.addEventListener('message', (event) => {
   }
 });
 
-// Background sync para formulários offline (futuro)
-self.addEventListener('sync', (event) => {
-  console.log('[SW] Background sync:', event.tag);
-  
-  if (event.tag === 'sync-availability') {
-    // Futuro: sincronizar disponibilidade quando voltar online
-  }
-});
-
-// Push notifications (futuro)
+// Push notifications
 self.addEventListener('push', (event) => {
   if (event.data) {
     const data = event.data.json();
@@ -234,7 +183,7 @@ self.addEventListener('push', (event) => {
     const options = {
       body: data.body || 'Nova notificação do Louvor Conectado',
       icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
+      badge: '/icons/icon-192-maskable.png',
       vibrate: [100, 50, 100],
       data: {
         url: data.url || '/'
@@ -256,4 +205,4 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-console.log('[SW] Service Worker loaded');
+console.log('[SW] Service Worker loaded - PWA Installable!');

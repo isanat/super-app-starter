@@ -10,7 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { RefreshCw, WifiOff, Download, X, Share, Plus, ChevronRight } from "lucide-react"
+import { RefreshCw, WifiOff, Download, X, Share, Plus, ChevronRight, Smartphone } from "lucide-react"
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[]
@@ -21,13 +21,11 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>
 }
 
-// Função auxiliar para verificar se está offline
 function getInitialOfflineStatus(): boolean {
   if (typeof window === "undefined") return false
   return !navigator.onLine
 }
 
-// Função auxiliar para verificar se está instalado
 function getInitialInstalledStatus(): boolean {
   if (typeof window === "undefined") return false
   const isStandalone = window.matchMedia("(display-mode: standalone)").matches
@@ -35,22 +33,19 @@ function getInitialInstalledStatus(): boolean {
   return isStandalone || !!isInWebAppiOS
 }
 
-// Detectar dispositivo
-function getDeviceType(): { isIOS: boolean; isAndroid: boolean; isMobile: boolean } {
-  if (typeof window === "undefined") return { isIOS: false, isAndroid: false, isMobile: false }
+function getInitialDismissed(): boolean {
+  if (typeof window === "undefined") return false
+  return !!localStorage.getItem("pwa-install-dismissed")
+}
+
+function getDeviceType(): { isIOS: boolean; isAndroid: boolean } {
+  if (typeof window === "undefined") return { isIOS: false, isAndroid: false }
   
   const ua = navigator.userAgent
   const isIOS = /iPad|iPhone|iPod/.test(ua)
   const isAndroid = /Android/.test(ua)
-  const isMobile = isIOS || isAndroid || /Mobile/.test(ua)
   
-  return { isIOS, isAndroid, isMobile }
-}
-
-// Função auxiliar para verificar status online
-function getInitialOnlineStatus(): boolean {
-  if (typeof window === "undefined") return true
-  return navigator.onLine
+  return { isIOS, isAndroid }
 }
 
 export function PWARegister() {
@@ -61,6 +56,7 @@ export function PWARegister() {
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null)
   const [isInstalled, setIsInstalled] = useState(getInitialInstalledStatus)
   const [showManualInstall, setShowManualInstall] = useState(false)
+  const [hasBeenDismissed, setHasBeenDismissed] = useState(getInitialDismissed)
 
   // Registrar Service Worker
   useEffect(() => {
@@ -81,20 +77,17 @@ export function PWARegister() {
         setRegistration(reg)
         console.log("[PWA] Service Worker registered:", reg.scope)
 
-        // Verificar atualizações
         reg.addEventListener("updatefound", () => {
           const newWorker = reg.installing
           if (!newWorker) return
 
           newWorker.addEventListener("statechange", () => {
             if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-              // Nova versão disponível
               setShowUpdateDialog(true)
             }
           })
         })
 
-        // Verificar se já existe uma atualização pendente
         if (reg.waiting) {
           setShowUpdateDialog(true)
         }
@@ -105,7 +98,6 @@ export function PWARegister() {
 
     registerSW()
 
-    // Listener para atualizações do controller
     const handleControllerChange = () => {
       console.log("[PWA] Controller changed, reloading...")
       window.location.reload()
@@ -123,15 +115,8 @@ export function PWARegister() {
   useEffect(() => {
     if (typeof window === "undefined") return
 
-    const handleOnline = () => {
-      setIsOffline(false)
-      console.log("[PWA] Back online")
-    }
-
-    const handleOffline = () => {
-      setIsOffline(true)
-      console.log("[PWA] Gone offline")
-    }
+    const handleOnline = () => setIsOffline(false)
+    const handleOffline = () => setIsOffline(true)
 
     window.addEventListener("online", handleOnline)
     window.addEventListener("offline", handleOffline)
@@ -151,19 +136,21 @@ export function PWARegister() {
       const promptEvent = e as BeforeInstallPromptEvent
       setInstallEvent(promptEvent)
       
-      // Mostrar prompt após um pequeno delay para melhor UX
-      setTimeout(() => {
-        setShowInstallPrompt(true)
-      }, 3000)
+      // Mostrar prompt após delay se não foi dispensado
+      if (!hasBeenDismissed && !isInstalled) {
+        setTimeout(() => {
+          setShowInstallPrompt(true)
+        }, 2000)
+      }
       
-      console.log("[PWA] Install prompt available")
+      console.log("[PWA] Install prompt available - App is installable!")
     }
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt)
 
-    // Verificar se é iOS e não está instalado - mostrar instruções manuais
-    const currentDeviceType = getDeviceType()
-    if (currentDeviceType.isIOS && !isInstalled) {
+    // iOS - mostrar instruções manuais
+    const deviceType = getDeviceType()
+    if (deviceType.isIOS && !isInstalled && !hasBeenDismissed) {
       setTimeout(() => {
         setShowManualInstall(true)
       }, 5000)
@@ -172,12 +159,11 @@ export function PWARegister() {
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt)
     }
-  }, [isInstalled])
+  }, [isInstalled, hasBeenDismissed])
 
   // Atualizar Service Worker
   const handleUpdate = useCallback(() => {
     if (registration?.waiting) {
-      // Enviar mensagem para o SW pular espera
       registration.waiting.postMessage({ type: "SKIP_WAITING" })
     }
     setShowUpdateDialog(false)
@@ -192,16 +178,22 @@ export function PWARegister() {
       const result = await installEvent.userChoice
       
       if (result.outcome === "accepted") {
-        console.log("[PWA] App installed")
+        console.log("[PWA] App installed successfully!")
         setIsInstalled(true)
+        setShowInstallPrompt(false)
       }
       
       setInstallEvent(null)
-      setShowInstallPrompt(false)
     } catch (error) {
       console.error("[PWA] Install failed:", error)
     }
   }, [installEvent])
+
+  const handleDismiss = useCallback(() => {
+    setShowInstallPrompt(false)
+    setHasBeenDismissed(true)
+    localStorage.setItem("pwa-install-dismissed", "true")
+  }, [])
 
   return (
     <>
@@ -224,34 +216,34 @@ export function PWARegister() {
               Atualização Disponível!
             </AlertDialogTitle>
             <AlertDialogDescription className="text-sm">
-              Uma nova versão do <strong>Louvor Conectado</strong> está disponível com melhorias e correções.
+              Uma nova versão do <strong>Louvor Conectado</strong> está disponível.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
-            <Button variant="outline" onClick={() => setShowUpdateDialog(false)} className="w-full sm:w-auto rounded-xl">
+          <AlertDialogFooter className="flex-col gap-2">
+            <Button variant="outline" onClick={() => setShowUpdateDialog(false)} className="w-full rounded-xl">
               Depois
             </Button>
-            <Button onClick={handleUpdate} className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 rounded-xl">
+            <Button onClick={handleUpdate} className="w-full bg-emerald-600 hover:bg-emerald-700 rounded-xl">
               Atualizar Agora
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Dialog de Instalação - Android/Desktop */}
+      {/* Dialog de Instalação PWA - Android/Desktop */}
       <AlertDialog open={showInstallPrompt} onOpenChange={setShowInstallPrompt}>
-        <AlertDialogContent className="max-w-sm rounded-2xl overflow-hidden p-0">
+        <AlertDialogContent className="max-w-sm rounded-2xl overflow-hidden p-0 border-0">
           {/* Header com gradiente */}
           <div className="relative bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 px-6 py-8 text-center text-white">
             <button 
-              onClick={() => setShowInstallPrompt(false)}
+              onClick={handleDismiss}
               className="absolute top-3 right-3 h-8 w-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
             >
               <X className="h-4 w-4" />
             </button>
             
             {/* Ícone do App */}
-            <div className="mx-auto mb-4 h-20 w-20 rounded-2xl bg-white shadow-2xl flex items-center justify-center overflow-hidden">
+            <div className="mx-auto mb-4 h-20 w-20 rounded-2xl bg-white shadow-2xl flex items-center justify-center overflow-hidden ring-4 ring-white/30">
               <img 
                 src="/icons/icon-192.png" 
                 alt="Louvor Conectado" 
@@ -263,26 +255,28 @@ export function PWARegister() {
             <p className="text-sm text-emerald-100 mt-1">Ministério de Louvor</p>
           </div>
           
-          <div className="px-6 py-5">
+          <div className="px-6 py-5 bg-white dark:bg-slate-900">
             <AlertDialogHeader className="p-0 mb-4">
-              <AlertDialogTitle className="text-center text-lg">
-                Instale nosso App! 🎵
+              <AlertDialogTitle className="text-center text-lg flex items-center justify-center gap-2">
+                <Smartphone className="h-5 w-5 text-emerald-600" />
+                Instalar como App
               </AlertDialogTitle>
               <AlertDialogDescription className="text-center text-sm">
-                Tenha acesso rápido, receba notificações e use mesmo offline.
+                Instale o app na sua tela inicial para uma experiência completa!
               </AlertDialogDescription>
             </AlertDialogHeader>
             
             {/* Benefícios */}
             <div className="space-y-3 mb-5">
               {[
-                { icon: "⚡", text: "Acesso rápido na tela inicial" },
+                { icon: "⚡", text: "Abre como app nativo" },
                 { icon: "🔔", text: "Notificações de convites" },
                 { icon: "📶", text: "Funciona sem internet" },
+                { icon: "🚀", text: "Mais rápido e fluido" },
               ].map((item, i) => (
-                <div key={i} className="flex items-center gap-3 text-sm">
+                <div key={i} className="flex items-center gap-3 text-sm bg-slate-50 dark:bg-slate-800 p-2.5 rounded-lg">
                   <span className="text-lg">{item.icon}</span>
-                  <span className="text-slate-600 dark:text-slate-300">{item.text}</span>
+                  <span className="text-slate-700 dark:text-slate-300">{item.text}</span>
                 </div>
               ))}
             </div>
@@ -290,14 +284,14 @@ export function PWARegister() {
             <AlertDialogFooter className="flex-col gap-2 p-0">
               <Button 
                 onClick={handleInstall} 
-                className="w-full h-12 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 rounded-xl text-base font-medium shadow-lg shadow-emerald-500/30"
+                className="w-full h-12 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 rounded-xl text-base font-medium shadow-lg"
               >
                 <Download className="h-5 w-5 mr-2" />
-                Instalar Agora
+                Instalar App
               </Button>
               <Button 
                 variant="ghost" 
-                onClick={() => setShowInstallPrompt(false)}
+                onClick={handleDismiss}
                 className="w-full text-slate-500 text-sm"
               >
                 Continuar no navegador
@@ -309,18 +303,21 @@ export function PWARegister() {
 
       {/* Dialog de Instalação Manual - iOS */}
       <AlertDialog open={showManualInstall} onOpenChange={setShowManualInstall}>
-        <AlertDialogContent className="max-w-sm rounded-2xl overflow-hidden p-0">
+        <AlertDialogContent className="max-w-sm rounded-2xl overflow-hidden p-0 border-0">
           {/* Header com gradiente */}
           <div className="relative bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 px-6 py-8 text-center text-white">
             <button 
-              onClick={() => setShowManualInstall(false)}
+              onClick={() => {
+                setShowManualInstall(false)
+                localStorage.setItem("pwa-install-dismissed", "true")
+              }}
               className="absolute top-3 right-3 h-8 w-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
             >
               <X className="h-4 w-4" />
             </button>
             
             {/* Ícone do App */}
-            <div className="mx-auto mb-4 h-20 w-20 rounded-2xl bg-white shadow-2xl flex items-center justify-center overflow-hidden">
+            <div className="mx-auto mb-4 h-20 w-20 rounded-2xl bg-white shadow-2xl flex items-center justify-center overflow-hidden ring-4 ring-white/30">
               <img 
                 src="/icons/icon-192.png" 
                 alt="Louvor Conectado" 
@@ -332,45 +329,45 @@ export function PWARegister() {
             <p className="text-sm text-emerald-100 mt-1">Ministério de Louvor</p>
           </div>
           
-          <div className="px-6 py-5">
+          <div className="px-6 py-5 bg-white dark:bg-slate-900">
             <AlertDialogHeader className="p-0 mb-4">
               <AlertDialogTitle className="text-center text-lg">
-                Instale na Tela Inicial 📱
+                📱 Instalar no iPhone/iPad
               </AlertDialogTitle>
               <AlertDialogDescription className="text-center text-sm">
-                Siga os passos abaixo para instalar:
+                Siga os passos abaixo:
               </AlertDialogDescription>
             </AlertDialogHeader>
             
             {/* Instruções iOS */}
-            <div className="space-y-4 mb-5">
-              <div className="flex items-start gap-3">
-                <div className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0">
+            <div className="space-y-3 mb-5">
+              <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800 p-3 rounded-lg">
+                <div className="h-8 w-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
                   <Share className="h-4 w-4 text-emerald-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Toque no botão "Compartilhar"</p>
-                  <p className="text-xs text-slate-500 mt-0.5">Ícone de compartilhar na barra inferior</p>
+                  <p className="text-sm font-medium">1. Toque em "Compartilhar"</p>
+                  <p className="text-xs text-slate-500">Ícone na barra inferior</p>
                 </div>
               </div>
               
-              <div className="flex items-start gap-3">
-                <div className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0">
+              <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800 p-3 rounded-lg">
+                <div className="h-8 w-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
                   <Plus className="h-4 w-4 text-emerald-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Selecione "Adicionar à Tela de Início"</p>
-                  <p className="text-xs text-slate-500 mt-0.5">Ou role para baixo se necessário</p>
+                  <p className="text-sm font-medium">2. Selecione "Adicionar à Tela de Início"</p>
+                  <p className="text-xs text-slate-500">Role para baixo se necessário</p>
                 </div>
               </div>
               
-              <div className="flex items-start gap-3">
-                <div className="h-8 w-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
-                  <ChevronRight className="h-4 w-4 text-emerald-600" />
+              <div className="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                <div className="h-8 w-8 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                  <ChevronRight className="h-4 w-4 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Toque em "Adicionar"</p>
-                  <p className="text-xs text-slate-500 mt-0.5">Pronto! O app estará na sua tela inicial</p>
+                  <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">3. Toque em "Adicionar"</p>
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400">Pronto! App instalado ✓</p>
                 </div>
               </div>
             </div>
@@ -378,7 +375,10 @@ export function PWARegister() {
             <AlertDialogFooter className="p-0">
               <Button 
                 variant="outline"
-                onClick={() => setShowManualInstall(false)}
+                onClick={() => {
+                  setShowManualInstall(false)
+                  localStorage.setItem("pwa-install-dismissed", "true")
+                }}
                 className="w-full rounded-xl"
               >
                 Entendi!
@@ -400,7 +400,6 @@ export function usePWAInstall() {
   useEffect(() => {
     if (typeof window === "undefined") return
 
-    // Capturar evento de instalação
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault()
       const promptEvent = e as BeforeInstallPromptEvent
@@ -435,26 +434,4 @@ export function usePWAInstall() {
   }, [installEvent])
 
   return { isInstalled, canInstall, install }
-}
-
-// Hook para status de conexão
-export function useOnlineStatus() {
-  const [isOnline, setIsOnline] = useState(getInitialOnlineStatus)
-
-  useEffect(() => {
-    if (typeof window === "undefined") return
-
-    const handleOnline = () => setIsOnline(true)
-    const handleOffline = () => setIsOnline(false)
-
-    window.addEventListener("online", handleOnline)
-    window.addEventListener("offline", handleOffline)
-
-    return () => {
-      window.removeEventListener("online", handleOnline)
-      window.removeEventListener("offline", handleOffline)
-    }
-  }, [])
-
-  return isOnline
 }

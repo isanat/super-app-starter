@@ -4,9 +4,10 @@
   "description": "Sistema de gerenciamento de ministério de louvor - Organize escalas, confirme presenças e gerencie músicos da sua igreja",
   "start_url": "/",
   "display": "standalone",
+  "display_override": ["standalone", "browser"],
   "background_color": "#ffffff",
   "theme_color": "#059669",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
   "scope": "/",
   "lang": "pt-BR",
   "categories": ["music", "lifestyle", "productivity"],
@@ -18,7 +19,7 @@
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-192.png",
+      "src": "/icons/icon-192-maskable.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
@@ -30,93 +31,36 @@
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-512.png",
+      "src": "/icons/icon-512-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
-    },
-    {
-      "src": "/icons/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
     }
   ],
-  "screenshots": [
-    {
-      "src": "/icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Tela inicial do Louvor Conectado"
-    }
-  ],
+  "screenshots": [],
   "shortcuts": [
     {
       "name": "Meus Eventos",
       "short_name": "Eventos",
       "description": "Ver meus eventos e convites",
       "url": "/",
-      "icons": [
-        {
-          "src": "/icons/icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Calendário",
       "short_name": "Calendário",
       "description": "Ver calendário de eventos",
       "url": "/eventos",
-      "icons": [
-        {
-          "src": "/icons/icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Meu Perfil",
       "short_name": "Perfil",
       "description": "Editar meu perfil e disponibilidade",
       "url": "/perfil",
-      "icons": [
-        {
-          "src": "/icons/icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     }
   ],
   "related_applications": [],
-  "prefer_related_applications": false,
-  "handle_links": "preferred",
-  "launch_handler": {
-    "client_mode": "navigate-existing"
-  },
-  "edge_side_panel": {
-    "preferred_width": 400
-  },
-  "display_override": [
-    "window-controls-overlay",
-    "standalone",
-    "browser"
-  ],
-  "file_handlers": [],
-  "share_target": {
-    "action": "/",
-    "method": "GET",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url"
-    }
-  },
-  "protocol_handlers": [
-    {
-      "protocol": "web+louvor",
-      "url": "/?event=%s"
-    }
-  ]
+  "prefer_related_applications": false
 }
