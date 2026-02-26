@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useSession } from "next-auth/react"
+import { useSession, signOut } from "next-auth/react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -12,9 +12,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Switch } from "@/components/ui/switch"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { useTheme } from "next-themes"
 import { 
   User, Mail, Phone, Camera, Save, Loader2, Music, Calendar, 
-  CheckCircle, Church, MapPin, ChevronLeft, Clock, Trophy
+  CheckCircle, Church, MapPin, ChevronLeft, Clock, Trophy,
+  LogOut, Sun, Moon, Settings
 } from "lucide-react"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -45,6 +47,7 @@ export default function PerfilPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const queryClient = useQueryClient()
+  const { theme, setTheme } = useTheme()
   
   const [name, setName] = React.useState("")
   const [phone, setPhone] = React.useState("")
@@ -92,8 +95,22 @@ export default function PerfilPage() {
       setName(profileData.user.name || "")
       setPhone(profileData.user.phone || "")
       if (profileData.user.musicianProfile) {
-        setSelectedInstruments(profileData.user.musicianProfile.instruments || [])
-        setSelectedVocals(profileData.user.musicianProfile.vocals || [])
+        // Instruments and vocals are stored as JSON strings
+        try {
+          const instruments = profileData.user.musicianProfile.instruments
+          const vocals = profileData.user.musicianProfile.vocals
+          
+          setSelectedInstruments(
+            typeof instruments === 'string' ? JSON.parse(instruments) : (instruments || [])
+          )
+          setSelectedVocals(
+            typeof vocals === 'string' ? JSON.parse(vocals) : (vocals || [])
+          )
+        } catch (e) {
+          console.error("Error parsing instruments/vocals:", e)
+          setSelectedInstruments([])
+          setSelectedVocals([])
+        }
       }
     }
   }, [profileData])
@@ -175,6 +192,14 @@ export default function PerfilPage() {
     }
   }
 
+  const handleLogout = async () => {
+    await signOut({ callbackUrl: "/login" })
+  }
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark")
+  }
+
   if (status === "loading" || isLoadingProfile) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -205,10 +230,24 @@ export default function PerfilPage() {
               <h1 className="font-semibold text-sm">Meu Perfil</h1>
             </div>
             
-            <Button size="sm" className="h-8 text-xs bg-emerald-500 hover:bg-emerald-600" onClick={handleSave} disabled={isSaving}>
-              {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
-              <span className="ml-1">Salvar</span>
-            </Button>
+            <div className="flex items-center gap-1">
+              {/* Theme Toggle */}
+              <button 
+                onClick={toggleTheme}
+                className="h-9 w-9 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition-colors"
+              >
+                {theme === "dark" ? (
+                  <Sun className="h-4 w-4 text-amber-500" />
+                ) : (
+                  <Moon className="h-4 w-4 text-slate-600" />
+                )}
+              </button>
+              
+              <Button size="sm" className="h-8 text-xs bg-emerald-500 hover:bg-emerald-600" onClick={handleSave} disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                <span className="ml-1">Salvar</span>
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -240,9 +279,9 @@ export default function PerfilPage() {
                   <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
                     {isDirector ? "Diretor" : session?.user?.role === "SINGER" ? "Cantor" : "Instrumentalista"}
                   </Badge>
-                  {(session?.user?.penaltyPoints || 0) > 0 && (
+                  {(profileData?.user?.penaltyPoints || 0) > 0 && (
                     <Badge variant="outline" className="text-[10px] h-5 px-1.5 text-amber-600 border-amber-500">
-                      {session?.user?.penaltyPoints}/9 pontos
+                      {profileData?.user?.penaltyPoints}/9 pontos
                     </Badge>
                   )}
                 </div>
@@ -252,22 +291,22 @@ export default function PerfilPage() {
         </Card>
 
         {/* Stats Cards */}
-        <div className="flex gap-2">
-          <div className="flex-1 bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700">
             <div className="flex items-center gap-1.5 text-emerald-500">
               <CheckCircle className="h-3.5 w-3.5" />
               <span className="text-[10px] font-medium">Participações</span>
             </div>
             <p className="text-xl font-bold text-slate-900 dark:text-white mt-1">{stats.confirmed}</p>
           </div>
-          <div className="flex-1 bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700">
             <div className="flex items-center gap-1.5 text-purple-500">
               <Trophy className="h-3.5 w-3.5" />
               <span className="text-[10px] font-medium">Pontos</span>
             </div>
-            <p className="text-xl font-bold text-slate-900 dark:text-white mt-1">{profileData?.user?.points || 0}</p>
+            <p className="text-xl font-bold text-slate-900 dark:text-white mt-1">{profileData?.user?.totalPoints || 0}</p>
           </div>
-          <div className="flex-1 bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700">
             <div className="flex items-center gap-1.5 text-slate-500">
               <Clock className="h-3.5 w-3.5" />
               <span className="text-[10px] font-medium">Total</span>
@@ -476,6 +515,40 @@ export default function PerfilPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Actions Card */}
+        <Card className="border border-slate-200 dark:border-slate-700">
+          <CardContent className="p-3 space-y-2">
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="w-full flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            >
+              <div className="flex items-center gap-2.5">
+                {theme === "dark" ? (
+                  <Moon className="h-4 w-4 text-slate-400" />
+                ) : (
+                  <Sun className="h-4 w-4 text-amber-500" />
+                )}
+                <span className="text-sm font-medium">Tema {theme === "dark" ? "Escuro" : "Claro"}</span>
+              </div>
+              <Switch
+                checked={theme === "dark"}
+                onCheckedChange={() => toggleTheme()}
+                className="data-[state=checked]:bg-emerald-500"
+              />
+            </button>
+
+            {/* Logout Button */}
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-2.5 p-3 rounded-lg bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-950/50 text-red-600 dark:text-red-400 transition-colors"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="text-sm font-medium">Sair da conta</span>
+            </button>
+          </CardContent>
+        </Card>
       </main>
     </div>
   )

@@ -1,11 +1,9 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
 import { 
-  Plus, Calendar, Users, Bell, User, Home, 
-  CheckCircle, Clock, Settings, Music, Share2,
-  CalendarCheck, Guitar, Mic
+  Home, Calendar, Users, Bell, User, 
+  Music, MoreHorizontal
 } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { useState } from "react"
@@ -16,8 +14,9 @@ interface QuickAction {
   label: string
   icon: React.ReactNode
   onClick: () => void
-  variant?: "default" | "primary" | "accent"
+  variant?: "default" | "primary" | "inactive"
   badge?: number
+  inactive?: boolean
 }
 
 interface QuickActionsFooterProps {
@@ -43,16 +42,16 @@ export function QuickActionsFooter({
   const directorActions = [
     { id: "home", label: "Início", icon: <Home className="h-5 w-5" />, onClick: () => router.push("/") },
     { id: "events", label: "Eventos", icon: <Calendar className="h-5 w-5" />, onClick: () => router.push("/eventos") },
-    { id: "add", label: "Novo", icon: <Plus className="h-6 w-6" />, onClick: () => onNewEvent?.(), variant: "primary" as const },
+    { id: "add", label: "Novo", icon: <Music className="h-5 w-5" />, onClick: () => router.push("/eventos/novo"), variant: "primary" as const },
     { id: "musicians", label: "Músicos", icon: <Users className="h-5 w-5" />, onClick: () => router.push("/musicos") },
-    { id: "profile", label: "Perfil", icon: <User className="h-5 w-5" />, onClick: () => router.push("/perfil"), badge: notificationCount },
+    { id: "profile", label: "Perfil", icon: <User className="h-5 w-5" />, onClick: () => router.push("/perfil") },
   ]
 
   const musicianActions = [
     { id: "home", label: "Início", icon: <Home className="h-5 w-5" />, onClick: () => router.push("/") },
-    { id: "pending", label: "Pendentes", icon: <Clock className="h-5 w-5" />, onClick: () => {}, badge: pendingCount },
-    { id: "availability", label: "Disponível", icon: <CalendarCheck className="h-5 w-5" />, onClick: () => router.push("/perfil"), variant: "primary" as const },
-    { id: "notifications", label: "Avisos", icon: <Bell className="h-5 w-5" />, onClick: () => {}, badge: notificationCount },
+    { id: "events", label: "Eventos", icon: <Calendar className="h-5 w-5" />, onClick: () => router.push("/eventos"), badge: pendingCount },
+    { id: "notifications", label: "Avisos", icon: <Bell className="h-5 w-5" />, onClick: () => router.push("/notificacoes"), badge: notificationCount },
+    { id: "more", label: "Mais", icon: <MoreHorizontal className="h-5 w-5" />, onClick: () => {}, variant: "inactive" as const, inactive: true },
     { id: "profile", label: "Perfil", icon: <User className="h-5 w-5" />, onClick: () => router.push("/perfil") },
   ]
 
@@ -65,17 +64,21 @@ export function QuickActionsFooter({
         <div className="flex items-center justify-around">
           {actions.map((action) => {
             const isPrimary = action.variant === "primary"
+            const isInactive = action.variant === "inactive"
             const isActive = activeTab === action.id
             
             return (
               <button
                 key={action.id}
                 onClick={() => {
+                  if (isInactive) return
                   setActiveTab(action.id)
                   action.onClick()
                 }}
+                disabled={isInactive}
                 className={cn(
                   "relative flex flex-col items-center justify-center min-w-[60px] py-2 px-3 rounded-xl transition-all duration-200",
+                  isInactive && "opacity-40 cursor-not-allowed",
                   isPrimary 
                     ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/30 -mt-6 rounded-2xl min-w-[72px] py-3 hover:shadow-xl hover:shadow-emerald-500/40 hover:scale-105 active:scale-95" 
                     : isActive 
@@ -115,7 +118,7 @@ export function QuickActionsFooter({
 // Floating Action Button for quick actions
 export function FloatingActionButton({
   onClick,
-  icon = <Plus className="h-6 w-6" />,
+  icon = <Music className="h-6 w-6" />,
   label = "Adicionar",
   className,
 }: {

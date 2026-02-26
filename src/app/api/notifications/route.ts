@@ -75,3 +75,32 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+// PATCH - Marcar todas como lidas
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+    }
+
+    await db.notification.updateMany({
+      where: { 
+        userId: session.user.id,
+        isRead: false 
+      },
+      data: { 
+        isRead: true,
+        readAt: new Date()
+      }
+    })
+    
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error("Erro ao atualizar notificações:", error)
+    return NextResponse.json(
+      { error: "Erro ao atualizar notificações" },
+      { status: 500 }
+    )
+  }
+}

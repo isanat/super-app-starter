@@ -257,9 +257,9 @@ export function MusicianDashboard() {
       )}
 
       <main className="px-4 py-4 space-y-5">
-        {/* Horizontal Stats Cards */}
-        <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-4 px-4 pb-1">
-          <div className="flex-shrink-0 min-w-[100px] bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700">
+        {/* Stats Grid - 2x2 para mostrar todos sem scroll */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700">
             <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
               <Clock className="h-3.5 w-3.5" />
               <span className="text-[10px] font-medium uppercase tracking-wide">Pendentes</span>
@@ -267,7 +267,7 @@ export function MusicianDashboard() {
             <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{pendingInvitations.length}</p>
           </div>
           
-          <div className="flex-shrink-0 min-w-[100px] bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700">
             <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
               <CheckCircle className="h-3.5 w-3.5" />
               <span className="text-[10px] font-medium uppercase tracking-wide">Confirmados</span>
@@ -275,7 +275,7 @@ export function MusicianDashboard() {
             <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{confirmedInvitations.length}</p>
           </div>
           
-          <div className="flex-shrink-0 min-w-[100px] bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700">
             <div className="flex items-center gap-1.5 text-slate-500">
               <History className="h-3.5 w-3.5" />
               <span className="text-[10px] font-medium uppercase tracking-wide">Participações</span>
@@ -283,12 +283,12 @@ export function MusicianDashboard() {
             <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{pastInvitations.length}</p>
           </div>
           
-          <div className="flex-shrink-0 min-w-[100px] bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700">
             <div className="flex items-center gap-1.5 text-purple-600 dark:text-purple-400">
               <Trophy className="h-3.5 w-3.5" />
               <span className="text-[10px] font-medium uppercase tracking-wide">Pontos</span>
             </div>
-            <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{profileData?.user?.points || 0}</p>
+            <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{profileData?.user?.totalPoints || 0}</p>
           </div>
         </div>
 

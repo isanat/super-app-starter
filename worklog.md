@@ -328,3 +328,119 @@ Redesenhar completamente a interface para um visual profissional e moderno com r
   - Scroll horizontal para stats
   - Cards com gradientes
   - Safe area para iPhones
+
+---
+## Task ID: 9 - Correções Críticas de UI/UX
+### Work Task
+Corrigir múltiplos bugs críticos relatados pelo usuário na tela do cantor/músico
+
+### Work Log
+
+#### PROBLEMA 1: Perfil não salva e upload de foto não funciona ✅ CORRIGIDO
+- **Status**: Corrigido
+- **Arquivos modificados**:
+  - `src/app/api/users/me/route.ts`
+- **Problema identificado**:
+  - API não aceitava o campo `weeklyAvailability`
+  - GET não retornava campos de gamificação (`totalPoints`, `level`, `streak`)
+  - PUT usava verificação incorreta (truthy vs undefined)
+- **Correções aplicadas**:
+  - Adicionado `weeklyAvailability` ao SELECT do GET
+  - Adicionado campos de gamificação ao SELECT (`totalPoints`, `level`, `streak`)
+  - Adicionado `weeklyAvailability` ao PUT
+  - Mudado verificação de `if (name)` para `if (name !== undefined)`
+  - Mudado verificação de `if (phone)` para `if (phone !== undefined)`
+
+#### PROBLEMA 2: Ícones repetidos no rodapé ✅ CORRIGIDO
+- **Status**: Corrigido
+- **Arquivo modificado**: `src/components/layout/quick-actions-footer.tsx`
+- **Problema identificado**:
+  - Botões "Pendentes" e "Avisos" pareciam redundantes
+  - Ícone "Pendentes" não tinha função clara
+- **Correções aplicadas**:
+  - Removido botão "Pendentes" (informação já está no card de stats)
+  - Adicionado botão "Eventos"
+  - Adicionado botão "Mais" inativo para funcionalidade futura
+  - Simplificado para 5 botões: Início, Eventos, Avisos, Mais (inativo), Perfil
+
+#### PROBLEMA 3: Cards horizontais precisam arrastar ✅ CORRIGIDO
+- **Status**: Corrigido
+- **Arquivo modificado**: `src/components/dashboard/musician-dashboard.tsx`
+- **Problema identificado**:
+  - 4 cards em scroll horizontal, só 3 cabiam na tela
+  - Precisava arrastar para ver o 4º card (ruim para UX)
+- **Correções aplicadas**:
+  - Mudado de `flex gap-2 overflow-x-auto` para `grid grid-cols-2 gap-2`
+  - Agora mostra todos os 4 cards em um grid 2x2 sem necessidade de scroll
+  - Corrigido `profileData?.user?.points` para `profileData?.user?.totalPoints`
+
+#### PROBLEMA 4: Página de notificações 404 ✅ CORRIGIDO
+- **Status**: Corrigido
+- **Arquivos criados/modificados**:
+  - `src/app/notificacoes/page.tsx` (novo)
+  - `src/app/api/notifications/route.ts` (adicionado PATCH)
+  - `src/app/api/notifications/[id]/route.ts` (adicionado PATCH)
+- **Funcionalidades implementadas**:
+  - Lista de notificações com ícones por tipo
+  - Marcar individual como lida
+  - Marcar todas como lidas
+  - Badges de tipo de notificação
+  - Timestamp relativo (ex: "há 5 minutos")
+  - Visual diferenciado para não lidas
+
+#### PROBLEMA 5: Disponibilidade não salva (botões de radio) ✅ CORRIGIDO
+- **Status**: Corrigido (indiretamente)
+- **Arquivo modificado**: `src/app/api/users/me/route.ts`
+- **Problema identificado**:
+  - API não aceitava `weeklyAvailability` no PUT
+  - Mensagem de sucesso aparecia mas não salvava
+- **Correções aplicadas**:
+  - Adicionado suporte a `weeklyAvailability` no PUT
+  - Agora a mutation salva corretamente no banco
+
+#### PROBLEMA 6: Sem botão de logout fácil ✅ CORRIGIDO
+- **Status**: Corrigido
+- **Arquivo modificado**: `src/app/perfil/page.tsx`
+- **Correções aplicadas**:
+  - Adicionado botão "Sair da conta" com ícone LogOut
+  - Botão vermelho para indicar ação destrutiva
+  - Usa `signOut` do next-auth
+
+#### PROBLEMA 7: Sem botão de mudar tema ✅ CORRIGIDO
+- **Status**: Corrigido
+- **Arquivo modificado**: `src/app/perfil/page.tsx`
+- **Correções aplicadas**:
+  - Adicionado toggle de tema no header (ícone Sol/Lua)
+  - Adicionado card de tema com switch
+  - Usa `useTheme` do next-themes
+  - Salva preferência automaticamente
+
+#### PROBLEMA 8: Parsing de instruments/vocals ✅ CORRIGIDO
+- **Status**: Corrigido
+- **Arquivo modificado**: `src/app/perfil/page.tsx`
+- **Problema identificado**:
+  - Instruments e vocals vêm como string JSON do banco
+  - Código esperava array diretamente
+- **Correções aplicadas**:
+  - Adicionado try/catch com JSON.parse
+  - Verificação de tipo (string vs array)
+  - Fallback para array vazio em caso de erro
+
+### Stage Summary
+- **Total de problemas corrigidos**: 8
+- **Arquivos modificados**:
+  1. `src/app/api/users/me/route.ts` - Suporte a weeklyAvailability e gamificação
+  2. `src/components/layout/quick-actions-footer.tsx` - Ícones limpos
+  3. `src/components/dashboard/musician-dashboard.tsx` - Grid 2x2 para stats
+  4. `src/app/perfil/page.tsx` - Logout, tema, parsing correto
+  5. `src/app/api/notifications/route.ts` - PATCH para marcar todas
+  6. `src/app/api/notifications/[id]/route.ts` - PATCH para marcar uma
+- **Arquivos criados**:
+  1. `src/app/notificacoes/page.tsx` - Página de notificações
+- **Lint**: Sem erros
+- **Funcionalidades adicionadas**:
+  - Página de notificações completa
+  - Toggle de tema claro/escuro
+  - Botão de logout fácil
+  - Grid 2x2 para stats (sem scroll horizontal)
+  - Ícone inativo para funcionalidade futura

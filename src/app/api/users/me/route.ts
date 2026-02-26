@@ -25,6 +25,10 @@ export async function GET() {
         blockedUntil: true,
         churchId: true,
         createdAt: true,
+        weeklyAvailability: true,
+        totalPoints: true,
+        level: true,
+        streak: true,
         church: {
           select: { id: true, name: true, slug: true }
         },
@@ -60,12 +64,13 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, phone, instruments, vocals, bio } = body
+    const { name, phone, instruments, vocals, bio, weeklyAvailability } = body
 
     // Atualizar dados básicos do usuário
     const updateData: any = {}
-    if (name) updateData.name = name
-    if (phone) updateData.phone = phone
+    if (name !== undefined) updateData.name = name
+    if (phone !== undefined) updateData.phone = phone
+    if (weeklyAvailability !== undefined) updateData.weeklyAvailability = weeklyAvailability
 
     if (Object.keys(updateData).length > 0) {
       await db.user.update({
