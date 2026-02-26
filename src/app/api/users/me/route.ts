@@ -79,19 +79,31 @@ export async function PUT(request: NextRequest) {
       })
     }
 
-    // Atualizar perfil de músico
+    // Atualizar perfil de músico - sempre incluir instruments pois é obrigatório
     const profileUpdateData: any = {}
-    if (instruments) profileUpdateData.instruments = JSON.stringify(instruments)
-    if (vocals) profileUpdateData.vocals = JSON.stringify(vocals)
+    if (instruments !== undefined) {
+      profileUpdateData.instruments = Array.isArray(instruments) 
+        ? JSON.stringify(instruments) 
+        : instruments
+    }
+    if (vocals !== undefined) {
+      profileUpdateData.vocals = Array.isArray(vocals) 
+        ? JSON.stringify(vocals) 
+        : vocals
+    }
     if (bio !== undefined) profileUpdateData.bio = bio
 
-    if (Object.keys(profileUpdateData).length > 0) {
+    // Sempre fazer upsert se há dados para atualizar
+    if (Object.keys(profileUpdateData).length > 0 || instruments !== undefined || vocals !== undefined) {
       await db.musicianProfile.upsert({
         where: { userId: session.user.id },
         update: profileUpdateData,
         create: {
           userId: session.user.id,
-          ...profileUpdateData
+          instruments: profileUpdateData.instruments || "[]",
+          vocals: profileUpdateData.vocals || null,
+          bio: profileUpdateData.bio || null,
+          updatedAt: new Date(),
         }
       })
     }
